@@ -1,0 +1,20 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Base application theme. -->
+    <style name="Base.Theme.TourSolverMobile2" parent="Theme.Material3.DayNight.NoActionBar">
+        <!-- Customize your theme here. -->
+        <item name="colorPrimary">@color/colorPrimary</item>
+        <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
+        <item name="colorAccent">@color/colorAccent</item>
+    </style>
+
+    <style name="DialogTheme" parent="Theme.AppCompat.Light.Dialog.Alert">
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:backgroundDimEnabled">true</item>
+    </style>
+
+    <style name="App.SeekBar" parent="Widget.AppCompat.SeekBar">
+        <item name="android:thumbTint">@color/colorPrimaryDark</item> <!-- Cambia colorAccent al color que desees para el thumb -->
+        <item name="android:progressTint">@color/colorPrimaryDark</item> <!-- Cambia colorPrimaryDark al color que desees para el rastro -->
+    </style>
+
+</resources>

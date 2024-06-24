@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="colorPrimary">#0091ea</color>
+    <color name="colorPrimaryDark">#0064b7</color>
+    <color name="colorAccent">#64c1ff</color>
+    <color name="black">@android:color/black</color>
+    <color name="white">@android:color/white</color>
+    <color name="gray">@android:color/darker_gray</color>
+    <color name="greenColor">#4CAF50</color> <!-- Ejemplo de color verde -->
+    <color name="amarillo">#feba27</color>
+    <color name="rojo">#e08081</color>
+    <color name="morado">#9a7d99</color>
+</resources>

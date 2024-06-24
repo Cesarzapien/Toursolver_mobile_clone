@@ -1,0 +1,15 @@
+<resources>
+    <string name="app_name">TourSolver Mobile 2</string>
+    <string name="open_navigation_drawer">Open</string>
+    <string name="close_navigation_drawer">Close</string>
+    <string name="user_name">Cesar Zapien</string>
+    <string name="user_email">cesarinss08@gmail.com</string>
+    <string name="map_image">Mapa</string>
+    <string name="info_button">info</string>
+    <string name="back_button">back</string>
+    <string name="important"><font color="#FF0000">*</font> Campos obligatorios</string>
+    <string name="cliente">nombre del cliente<font color="#FF0000">*</font></string>
+    <string name="button1_desc" />
+    <string name="button2_desc" />
+    <string name="image_button_desc" />
+</resources>
