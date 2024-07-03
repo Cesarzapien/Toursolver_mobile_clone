@@ -160,7 +160,7 @@ public class Order implements Parcelable {
     @SerializedName("possibleVisitDays")
     private String [] possibleVisitDays;
 
-    protected Order(Parcel in) {
+    public Order(Parcel in) {
         id = in.readString();
         label = in.readString();
         requiredSkills = in.createStringArray();
@@ -209,6 +209,10 @@ public class Order implements Parcelable {
         tsOrderDisjoint = in.readString();
         customDataMap = in.readParcelable(CustomDataMap.class.getClassLoader());
         possibleVisitDays = in.createStringArray();
+    }
+
+    public Order() {
+
     }
 
     @Override

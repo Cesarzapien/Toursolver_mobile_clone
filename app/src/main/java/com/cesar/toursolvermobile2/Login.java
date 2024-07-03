@@ -180,11 +180,26 @@ public class Login extends AppCompatActivity {
 
                     List<LastKnownPosition> lastKnownPositions = apiResponse.getLastKnownPosition();
                     List<OperationalOrderAchievement> achievementsList = apiResponse.getOperationalOrderAchievements();
+                    List<OperationalOrderAchievement> achievementsListAgenda = apiResponse.getOperationalOrderAchievements();
                     List<PlannedOrder> plannedOrders = new ArrayList<>();
+                    List<PlannedOrder> plannedOrdersAgenda = new ArrayList<>();
                     List<Order> orders = new ArrayList<>();
+                    List<Order> ordersAgenda = new ArrayList<>();
                     List<Geocode> geocodes = new ArrayList<>();
 
                     Log.d(TAG,"Last Known"+lastKnownPositions.toString());
+
+                    for (OperationalOrderAchievement achievementAgenda : achievementsListAgenda){
+                        PlannedOrder plannedOrderAgenda = achievementAgenda.getPlannedOrder();
+                        if (plannedOrderAgenda != null && !"Llegada".equals(plannedOrderAgenda.getStopId())){
+                            plannedOrdersAgenda.add(plannedOrderAgenda);
+                        }
+                    }
+
+                    for (OperationalOrderAchievement achievementAgenda : achievementsListAgenda) {
+                        Order order = achievementAgenda.getOrder();
+                        ordersAgenda.add(order);
+                    }
 
                     // Obtener la lista de PlannedOrder de OperationalOrderAchievement y filtrar los elementos con stopId "Llegada"
                     for (OperationalOrderAchievement achievement : achievementsList) {
@@ -222,6 +237,9 @@ public class Login extends AppCompatActivity {
                     intent.putParcelableArrayListExtra("plannedOrders", new ArrayList<>(plannedOrders));
                     intent.putParcelableArrayListExtra("orders", new ArrayList<>(orders));
                     intent.putParcelableArrayListExtra("geocodes",new ArrayList<>(geocodes));
+                    intent.putParcelableArrayListExtra("achievementsAgenda",new ArrayList<>(achievementsListAgenda));
+                    intent.putParcelableArrayListExtra("plannedOrdersAgenda",new ArrayList<>(plannedOrdersAgenda));
+                    intent.putParcelableArrayListExtra("ordersAgenda",new ArrayList<>(ordersAgenda));
                     intent.putExtra("user_name", fullName);
                     intent.putExtra("user_email", email);
                     intent.putExtra("hora_exacta", hour);

@@ -72,8 +72,11 @@ public class InicioActivity extends DrawerBaseActivity {
     private ImageButton boton_cita;
     private List<LastKnownPosition> lastKnownPositions2;
     private List<PlannedOrder> plannedOrders2;
+    private List<PlannedOrder> plannedOrdersAgenda2;
     private List<Order> orders2;
+    private List<Order> ordersAgenda2;
     private List<OperationalOrderAchievement> achievements2;
+    private List<OperationalOrderAchievement> achievementsAgenda2;
     private List<Geocode> geocodes2 ;
     private Button agenda,sitios;
 
@@ -113,9 +116,14 @@ public class InicioActivity extends DrawerBaseActivity {
         List<OperationalOrderAchievement> achievements = getIntent().getParcelableArrayListExtra("achievements");
         List<PlannedOrder> plannedOrders = getIntent().getParcelableArrayListExtra("plannedOrders");
         List<Order> orders = getIntent().getParcelableArrayListExtra("orders");
+        List<OperationalOrderAchievement> achievementsAgenda = getIntent().getParcelableArrayListExtra("achievementsAgenda");
+        List<PlannedOrder> plannedOrdersAgenda = getIntent().getParcelableArrayListExtra("plannedOrdersAgenda");
+        List<Order> ordersAgenda = getIntent().getParcelableArrayListExtra("ordersAgenda");
         List<Geocode> geocodes = getIntent().getParcelableArrayListExtra("geocodes");
 
-
+        Log.d(TAG,"achievements Agenda "+achievementsAgenda.toString());
+        Log.d(TAG,"plannedOrders Agenda "+plannedOrdersAgenda.toString());
+        Log.d(TAG,"orders Agenda "+ordersAgenda.toString());
         Log.d(TAG,"Positioning "+lastKnownPositions.toString());
         Log.d(TAG,"Orders Inicio 1 "+orders.toString());
         Log.d(TAG,"achievements Inicio "+achievements.toString());
@@ -230,6 +238,10 @@ public class InicioActivity extends DrawerBaseActivity {
                     intent.putParcelableArrayListExtra("orders", new ArrayList<>(orders2));
                     intent.putParcelableArrayListExtra("achievements",new ArrayList<>(achievements2));
                     intent.putParcelableArrayListExtra("geocodes",new ArrayList<>(geocodes2));
+                    intent.putParcelableArrayListExtra("achievementsAgenda",new ArrayList<>(achievementsAgenda2));
+                    intent.putParcelableArrayListExtra("plannedOrdersAgenda",new ArrayList<>(plannedOrdersAgenda2));
+                    intent.putParcelableArrayListExtra("ordersAgenda",new ArrayList<>(ordersAgenda2));
+
                     intent.putExtra("hora_exacta", hora_global);
                     startActivity(intent);
                     finish();
@@ -242,6 +254,9 @@ public class InicioActivity extends DrawerBaseActivity {
                     intent.putParcelableArrayListExtra("plannedOrders", new ArrayList<>(plannedOrders));
                     intent.putParcelableArrayListExtra("orders", new ArrayList<>(orders));
                     intent.putParcelableArrayListExtra("achievements",new ArrayList<>(achievements));
+                    intent.putParcelableArrayListExtra("achievementsAgenda",new ArrayList<>(achievementsAgenda));
+                    intent.putParcelableArrayListExtra("plannedOrdersAgenda",new ArrayList<>(plannedOrdersAgenda));
+                    intent.putParcelableArrayListExtra("ordersAgenda",new ArrayList<>(ordersAgenda));
                     intent.putParcelableArrayListExtra("geocodes",new ArrayList<>(geocodes));
                     intent.putExtra("hora_exacta", hora_global);
                     startActivity(intent);
@@ -263,6 +278,9 @@ public class InicioActivity extends DrawerBaseActivity {
                     intent1.putParcelableArrayListExtra("plannedOrders", new ArrayList<>(plannedOrders2));
                     intent1.putParcelableArrayListExtra("orders", new ArrayList<>(orders2));
                     intent1.putParcelableArrayListExtra("achievements",new ArrayList<>(achievements2));
+                    intent1.putParcelableArrayListExtra("achievementsAgenda",new ArrayList<>(achievementsAgenda2));
+                    intent1.putParcelableArrayListExtra("plannedOrdersAgenda",new ArrayList<>(plannedOrdersAgenda2));
+                    intent1.putParcelableArrayListExtra("ordersAgenda",new ArrayList<>(ordersAgenda2));
                     intent1.putParcelableArrayListExtra("geocodes",new ArrayList<>(geocodes2));
                     intent1.putExtra("hora_exacta", hora_global);
                     startActivity(intent1);
@@ -276,6 +294,9 @@ public class InicioActivity extends DrawerBaseActivity {
                     intent2.putParcelableArrayListExtra("plannedOrders", new ArrayList<>(plannedOrders));
                     intent2.putParcelableArrayListExtra("orders", new ArrayList<>(orders));
                     intent2.putParcelableArrayListExtra("achievements",new ArrayList<>(achievements));
+                    intent2.putParcelableArrayListExtra("achievementsAgenda",new ArrayList<>(achievementsAgenda));
+                    intent2.putParcelableArrayListExtra("plannedOrdersAgenda",new ArrayList<>(plannedOrdersAgenda));
+                    intent2.putParcelableArrayListExtra("ordersAgenda",new ArrayList<>(ordersAgenda));
                     intent2.putParcelableArrayListExtra("geocodes",new ArrayList<>(geocodes));
                     intent2.putExtra("hora_exacta", hora_global);
                     startActivity(intent2);
@@ -296,6 +317,9 @@ public class InicioActivity extends DrawerBaseActivity {
                     intent.putParcelableArrayListExtra("plannedOrders", new ArrayList<>(plannedOrders2));
                     intent.putParcelableArrayListExtra("orders", new ArrayList<>(orders2));
                     intent.putParcelableArrayListExtra("achievements",new ArrayList<>(achievements2));
+                    intent.putParcelableArrayListExtra("achievementsAgenda",new ArrayList<>(achievementsAgenda2));
+                    intent.putParcelableArrayListExtra("plannedOrdersAgenda",new ArrayList<>(plannedOrdersAgenda2));
+                    intent.putParcelableArrayListExtra("ordersAgenda",new ArrayList<>(ordersAgenda2));
                     intent.putParcelableArrayListExtra("geocodes",new ArrayList<>(geocodes2));
                     intent.putExtra("hora_exacta", hora_global);
                     startActivity(intent);
@@ -308,6 +332,9 @@ public class InicioActivity extends DrawerBaseActivity {
                     intent.putParcelableArrayListExtra("plannedOrders", new ArrayList<>(plannedOrders));
                     intent.putParcelableArrayListExtra("orders", new ArrayList<>(orders));
                     intent.putParcelableArrayListExtra("achievements",new ArrayList<>(achievements));
+                    intent.putParcelableArrayListExtra("achievementsAgenda",new ArrayList<>(achievementsAgenda));
+                    intent.putParcelableArrayListExtra("plannedOrdersAgenda",new ArrayList<>(plannedOrdersAgenda));
+                    intent.putParcelableArrayListExtra("ordersAgenda",new ArrayList<>(ordersAgenda));
                     intent.putParcelableArrayListExtra("geocodes",new ArrayList<>(geocodes));
                     intent.putExtra("hora_exacta", hora_global);
                     startActivity(intent);

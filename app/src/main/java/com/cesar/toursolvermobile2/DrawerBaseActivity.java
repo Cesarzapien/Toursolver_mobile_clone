@@ -71,6 +71,9 @@ public class DrawerBaseActivity extends AppCompatActivity implements NavigationV
         List<PlannedOrder> plannedOrders = getIntent().getParcelableArrayListExtra("plannedOrders");
         List<Order> orders = getIntent().getParcelableArrayListExtra("orders");
         List<Geocode> geocodes = getIntent().getParcelableArrayListExtra("geocodes");
+        List<OperationalOrderAchievement> achievementsAgenda = getIntent().getParcelableArrayListExtra("achievementsAgenda");
+        List<PlannedOrder> plannedOrdersAgenda = getIntent().getParcelableArrayListExtra("plannedOrdersAgenda");
+        List<Order> ordersAgenda = getIntent().getParcelableArrayListExtra("ordersAgenda");
         String hour = currentIntent.getStringExtra("hora_exacta");
 
 
@@ -111,6 +114,9 @@ public class DrawerBaseActivity extends AppCompatActivity implements NavigationV
             intent.putParcelableArrayListExtra("orders", new ArrayList<>(orders));
             intent.putParcelableArrayListExtra("achievements",new ArrayList<>(achievements));
             intent.putParcelableArrayListExtra("geocodes",new ArrayList<>(geocodes));
+            intent.putParcelableArrayListExtra("achievementsAgenda",new ArrayList<>(achievementsAgenda));
+            intent.putParcelableArrayListExtra("plannedOrdersAgenda",new ArrayList<>(plannedOrdersAgenda));
+            intent.putParcelableArrayListExtra("ordersAgenda",new ArrayList<>(ordersAgenda));
             intent.putExtra("hora_exacta", hour);
             startActivity(intent);
             finish();
