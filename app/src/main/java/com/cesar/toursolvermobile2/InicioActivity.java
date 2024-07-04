@@ -2,6 +2,7 @@ package com.cesar.toursolvermobile2;
 
 import static android.content.ContentValues.TAG;
 
+import android.content.Context;
 import android.content.Intent;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
@@ -15,6 +16,8 @@ import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.FragmentManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -29,6 +32,15 @@ import com.cesar.toursolvermobile2.model.OperationalOrderAchievement;
 import com.cesar.toursolvermobile2.model.Order;
 import com.cesar.toursolvermobile2.model.PlannedOrder;
 import com.google.android.material.navigation.NavigationView;
+import com.here.sdk.core.GeoCoordinates;
+import com.here.sdk.core.engine.SDKNativeEngine;
+import com.here.sdk.core.engine.SDKOptions;
+import com.here.sdk.core.errors.InstantiationErrorException;
+import com.here.sdk.mapview.MapError;
+import com.here.sdk.mapview.MapMeasure;
+import com.here.sdk.mapview.MapScene;
+import com.here.sdk.mapview.MapScheme;
+import com.here.sdk.mapview.MapView;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -79,12 +91,21 @@ public class InicioActivity extends DrawerBaseActivity {
     private List<OperationalOrderAchievement> achievementsAgenda2;
     private List<Geocode> geocodes2 ;
     private Button agenda,sitios;
+    private MapView mapView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        // Usually, you need to initialize the HERE SDK only once during the lifetime of an application.
+        initializeHERESDK();
         activityInicioBinding = ActivityInicioBinding.inflate(getLayoutInflater());
         setContentView(activityInicioBinding.getRoot());
+
+        // Get a MapView instance from the layout.
+        mapView = findViewById(R.id.map_view);
+        mapView.onCreate(savedInstanceState);
+
+        loadMapScene();
 
         // Referenciar el TextView de la próxima cita
         agenda = findViewById(R.id.button_agenda);
@@ -344,6 +365,49 @@ public class InicioActivity extends DrawerBaseActivity {
 
     }
 
+    private void initializeHERESDK() {
+        // Set your credentials for the HERE SDK.
+        String accessKeyID = "kFQ5gYJvmOwdoeA94GlfWw";
+        String accessKeySecret = "l2XlfnoRv8eY4X40KfGOB6s5u820HsCARXLvLMBiM-wmDLcF6dLGWNLNR-Y1-cQ7Cr_PhrZIz1Aurjm245tEXg";
+        SDKOptions options = new SDKOptions(accessKeyID, accessKeySecret);
+        try {
+            Context context = this;
+            SDKNativeEngine.makeSharedInstance(context, options);
+        } catch (InstantiationErrorException e) {
+            throw new RuntimeException("Initialization of HERE SDK failed: " + e.error.name());
+        }
+    }
+
+    private void loadMapScene() {
+        // Load a scene from the HERE SDK to render the map with a map scheme.
+        mapView.getMapScene().loadScene(MapScheme.NORMAL_DAY, new MapScene.LoadSceneCallback() {
+            @Override
+            public void onLoadScene(@Nullable MapError mapError) {
+                if (mapError == null) {
+                    double distanceInMeters = 1000 * 10;
+                    MapMeasure mapMeasureZoom = new MapMeasure(MapMeasure.Kind.DISTANCE, distanceInMeters);
+                    mapView.getCamera().lookAt(
+                            new GeoCoordinates(52.530932, 13.384915), mapMeasureZoom);
+                } else {
+                    Log.d("loadMapScene()", "Loading map failed: mapError: " + mapError.name());
+                }
+            }
+        });
+    }
+
+    private void disposeHERESDK() {
+        // Free HERE SDK resources before the application shuts down.
+        // Usually, this should be called only on application termination.
+        // Afterwards, the HERE SDK is no longer usable unless it is initialized again.
+        SDKNativeEngine sdkNativeEngine = SDKNativeEngine.getSharedInstance();
+        if (sdkNativeEngine != null) {
+            sdkNativeEngine.dispose();
+            // For safety reasons, we explicitly set the shared instance to null to avoid situations,
+            // where a disposed instance is accidentally reused.
+            SDKNativeEngine.setSharedInstance(null);
+        }
+    }
+
     // Método para obtener el próximo índice válido comenzando desde la segunda posición
     private int getNextValidIndex(List<OperationalOrderAchievement> achievements, int startIndex) {
         for (int i = startIndex; i < achievements.size(); i++) {
@@ -590,6 +654,7 @@ public class InicioActivity extends DrawerBaseActivity {
 
     @Override
     protected void onPause() {
+        mapView.onPause();
         super.onPause();
         isPaused = true;
         startTimer();
@@ -597,9 +662,23 @@ public class InicioActivity extends DrawerBaseActivity {
 
     @Override
     protected void onResume() {
+        mapView.onResume();
         super.onResume();
         isPaused = false;
         stopTimer();
+    }
+
+    @Override
+    protected void onDestroy() {
+        mapView.onDestroy();
+        disposeHERESDK();
+        super.onDestroy();
+    }
+
+    @Override
+    protected void onSaveInstanceState(@NonNull Bundle outState) {
+        mapView.onSaveInstanceState(outState);
+        super.onSaveInstanceState(outState);
     }
 
     @Override
