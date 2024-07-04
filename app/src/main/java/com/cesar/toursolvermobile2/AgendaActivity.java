@@ -12,6 +12,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.widget.Toolbar;
+import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.cesar.toursolvermobile2.adapter.AgendaAdapter;
@@ -55,8 +56,8 @@ public class AgendaActivity extends DrawerBaseActivity {
     private List<Order> orders2;
     private List<OperationalOrderAchievement> achievements2;
     private List<Geocode> geocodes2;
-    private RecyclerView recyclerView;
-    private AgendaAdapter adapter;
+    private RecyclerView agendaRecyclerView;
+    private AgendaAdapter agendaAdapter;
 
     ImageButton arrowBack, arrowForward;
     TextView dateTextView;
@@ -83,6 +84,10 @@ public class AgendaActivity extends DrawerBaseActivity {
         activityAgendaBinding = ActivityAgendaBinding.inflate(getLayoutInflater());
         setContentView(activityAgendaBinding.getRoot());
 
+        // Initialize RecyclerView
+        agendaRecyclerView = findViewById(R.id.recyclerView);
+        agendaRecyclerView.setLayoutManager(new LinearLayoutManager(this));
+
         List<OperationalOrderAchievement> achievementsAgenda = getIntent().getParcelableArrayListExtra("achievementsAgenda");
         List<PlannedOrder> plannedOrdersAgenda = getIntent().getParcelableArrayListExtra("plannedOrdersAgenda");
         List<Order> ordersAgenda = getIntent().getParcelableArrayListExtra("ordersAgenda");
@@ -103,10 +108,11 @@ public class AgendaActivity extends DrawerBaseActivity {
             // Crear un nuevo objeto AgendaModel
             AgendaModel agendaModel = new AgendaModel();
             agendaModel.setStopId(plannedOrder.getStopId());
-
-            // Establecer el label según la condición de "Salida" o el Order
+            // Establecer el label según la condición de "Salida", "5", o el Order
             if (plannedOrder.getStopId().equals("Salida")) {
                 agendaModel.setLabel("Itinerario");
+            } else if (plannedOrder.getStopId().equals("5")) {
+                agendaModel.setLabel("Pausa");
             } else {
                 agendaModel.setLabel(order != null ? order.getLabel() : "Itinerario");
             }
@@ -130,32 +136,79 @@ public class AgendaActivity extends DrawerBaseActivity {
             // Añadir el objeto AgendaModel a la lista
             agendaModels.add(agendaModel);
 
-            // Si el stopId contiene "ORDER" o es "5", crear un nuevo objeto AgendaModel de itinerario
-            if (plannedOrder.getStopId().contains("ORDER") || plannedOrder.getStopId().equals("5")) {
-                // Crear un nuevo objeto AgendaModel de itinerario
-                AgendaModel itinerarioModel = new AgendaModel();
-                itinerarioModel.setStopId("itinerario");
-                itinerarioModel.setLabel("Itinerario");
+            // Si el stopId contiene "ORDER" o es "5", y no estamos en el último elemento, crear un nuevo objeto AgendaModel de itinerario
+            if ((plannedOrder.getStopId().contains("ORDER") || plannedOrder.getStopId().equals("5")) && i < plannedOrdersAgenda.size() - 1) {
+                // Verificar que el siguiente stopId no sea "5"
+                PlannedOrder nextOrder = plannedOrdersAgenda.get(i + 1);
+                if (!nextOrder.getStopId().equals("5")) {
+                    // Crear un nuevo objeto AgendaModel de itinerario
+                    AgendaModel itinerarioModel = new AgendaModel();
+                    itinerarioModel.setStopId("itinerario");
+                    itinerarioModel.setLabel("Itinerario");
 
-                // Establecer stopStartTime como stopEndTime del último AgendaModel
-                if (!agendaModels.isEmpty()) {
-                    AgendaModel lastModel = agendaModels.get(agendaModels.size() - 1);
-                    itinerarioModel.setStopStartTime(lastModel.getStopEndTime());
-                }
+                    // Establecer stopStartTime como stopEndTime del último AgendaModel
+                    if (!agendaModels.isEmpty()) {
+                        AgendaModel lastModel = agendaModels.get(agendaModels.size() - 1);
+                        itinerarioModel.setStopStartTime(lastModel.getStopEndTime());
+                    }
 
-                // Establecer stopEndTime como stopStartTime del siguiente AgendaModel, si existe
-                if (i + 1 < plannedOrdersAgenda.size()) {
-                    PlannedOrder nextOrder = plannedOrdersAgenda.get(i + 1);
+                    // Establecer stopEndTime como stopStartTime del siguiente AgendaModel, si existe
                     itinerarioModel.setStopEndTime(formatStopTime(nextOrder.getStopStartTime()));
-                }
 
-                // Añadir el objeto AgendaModel de itinerario a la lista
-                agendaModels.add(itinerarioModel);
+                    // Añadir el objeto AgendaModel de itinerario a la lista
+                    agendaModels.add(itinerarioModel);
+                }
+            }
+        }
+
+        // Iterar sobre achievementsAgenda para actualizar agendaModels
+        for (AgendaModel agendaModel : agendaModels) {
+            String stopId = agendaModel.getStopId();
+            if (stopId.equals("5")) {
+                agendaModel.setId("Pausa");
+                agendaModel.setStatus("Pausa");
+            } else if (stopId.equals("Salida")) {
+                agendaModel.setId("Salida");
+                agendaModel.setStatus("Salida");
+            } else if (stopId.equals("itinerario")) {
+                agendaModel.setId("itinerario");
+                agendaModel.setStatus("itinerario");
+            } else {
+                // Verificar si el stopId comienza con "ORDER"
+                if (stopId.startsWith("ORDER")) {
+                    for (OperationalOrderAchievement achievement : achievementsAgenda) {
+                        if (achievement.getPlannedOrder().getStopId().equals(stopId)) {
+                            agendaModel.setId(achievement.getId());
+                            agendaModel.setStatus(achievement.getStatus());
+                            break;
+                        }
+                    }
+                }
             }
         }
 
 
-        Log.d(TAG,"AgendaModel: "+agendaModels.toString());
+
+        // Después de haber construido y poblado la lista `agendaModels`, imprímela
+        Log.d(TAG, "AgendaModels completos:");
+        for (AgendaModel model : agendaModels) {
+            Log.d(TAG, "StopId: " + model.getStopId() +
+                    ", Label: " + model.getLabel() +
+                    ", StopStartTime: " + model.getStopStartTime() +
+                    ", StopEndTime: " + model.getStopEndTime() +
+                    ", id: " +model.getId() +
+                    ", status: " +model.getStatus());
+
+        }
+
+        // Initialize Adapter
+        agendaAdapter = new AgendaAdapter(this, agendaModels);
+
+        // Set Adapter to RecyclerView
+        agendaRecyclerView.setAdapter(agendaAdapter);
+
+
+        //Log.d(TAG,"AgendaModel: "+agendaModels.toString());
 
 // Resto del código del onCreate...
 

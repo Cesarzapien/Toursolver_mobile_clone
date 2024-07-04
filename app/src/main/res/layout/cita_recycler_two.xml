@@ -7,9 +7,9 @@
     <LinearLayout
         android:id="@+id/cita_detalles_two"
         android:layout_width="0dp"
-        android:layout_height="75dp"
+        android:layout_height="90dp"
         android:orientation="horizontal"
-        android:elevation="8dp"
+        android:elevation="10dp"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
@@ -38,7 +38,7 @@
                 android:layout_marginBottom="4dp"/>
 
             <TextView
-                android:id="@+id/cita_nombre"
+                android:id="@+id/cita_nombre_two"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Nombre 31"
@@ -59,7 +59,7 @@
         android:id="@+id/linea_cita"
         android:layout_width="0dp"
         android:layout_height="1dp"
-        android:background="#000000"
+        android:background="#828181"
         app:layout_constraintTop_toBottomOf="@id/cita_detalles_two"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"

@@ -84,10 +84,13 @@ public class CitaActivity extends AppCompatActivity implements mapHelper.Permiss
     private List<LastKnownPosition> lastKnownPositions;
     private List<LastKnownPosition> lastKnownPositions2;
     private List<PlannedOrder> plannedOrders;
+    private List<PlannedOrder> plannedOrdersAgenda;
     private List<PlannedOrder> plannedOrders2;
     private List<Order> orders;
+    private List<Order> ordersAgenda;
     private List<Order> orders2;
     private List<OperationalOrderAchievement> achievements;
+    private List<OperationalOrderAchievement> achievementsAgenda;
     private List<OperationalOrderAchievement> achievements2;
     private List<Geocode> geocodes;
     private List<Geocode> geocodes2;
@@ -192,8 +195,11 @@ public class CitaActivity extends AppCompatActivity implements mapHelper.Permiss
         // Obtener los datos de PlannedOrder y Order del intent
         lastKnownPositions = getIntent().getParcelableArrayListExtra("positioning");
         plannedOrders = getIntent().getParcelableArrayListExtra("plannedOrders");
+        plannedOrdersAgenda = getIntent().getParcelableArrayListExtra("plannedOrdersAgenda");
         orders = getIntent().getParcelableArrayListExtra("orders");
+        ordersAgenda = getIntent().getParcelableArrayListExtra("ordersAgenda");
         achievements = getIntent().getParcelableArrayListExtra("achievements");
+        achievementsAgenda = getIntent().getParcelableArrayListExtra("achievementsAgenda");
         geocodes = getIntent().getParcelableArrayListExtra("geocodes");
         hour = currentIntent.getStringExtra("hora_exacta");
         Back_button = findViewById(R.id.backButton);
@@ -732,6 +738,9 @@ public class CitaActivity extends AppCompatActivity implements mapHelper.Permiss
                     intent.putParcelableArrayListExtra("orders", new ArrayList<>(orders2));
                     intent.putParcelableArrayListExtra("geocodes", new ArrayList<>(geocodes2));
                     intent.putParcelableArrayListExtra("achievements", new ArrayList<>(achievements2));
+                    intent.putParcelableArrayListExtra("achievementsAgenda",new ArrayList<>(achievementsAgenda));
+                    intent.putParcelableArrayListExtra("plannedOrdersAgenda",new ArrayList<>(plannedOrdersAgenda));
+                    intent.putParcelableArrayListExtra("ordersAgenda",new ArrayList<>(ordersAgenda));
                     intent.putExtra("hora_exacta", hora_global2);
                     startActivity(intent);
                     finish();
@@ -745,6 +754,9 @@ public class CitaActivity extends AppCompatActivity implements mapHelper.Permiss
                     intent.putParcelableArrayListExtra("orders", new ArrayList<>(orders));
                     intent.putParcelableArrayListExtra("geocodes", new ArrayList<>(geocodes));
                     intent.putParcelableArrayListExtra("achievements", new ArrayList<>(achievements));
+                    intent.putParcelableArrayListExtra("achievementsAgenda",new ArrayList<>(achievementsAgenda));
+                    intent.putParcelableArrayListExtra("plannedOrdersAgenda",new ArrayList<>(plannedOrdersAgenda));
+                    intent.putParcelableArrayListExtra("ordersAgenda",new ArrayList<>(ordersAgenda));
                     intent.putExtra("hora_exacta", hour);
                     startActivity(intent);
                     finish();

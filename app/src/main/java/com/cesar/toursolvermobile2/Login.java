@@ -79,7 +79,7 @@ public class Login extends AppCompatActivity {
         Date tomorrowDate = calendar.getTime();
 
         // Formatear las fechas en el formato necesario para la llamada a la API
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault());
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'00:00:00", Locale.getDefault());
         SimpleDateFormat sdf2 = new SimpleDateFormat("HH:mm",Locale.getDefault());
         String hour = sdf2.format(currentDate);
         String startDate = sdf.format(currentDate);

@@ -4,24 +4,30 @@ import android.os.Parcel;
 import android.os.Parcelable;
 
 public class AgendaModel implements Parcelable {
+    String id;
     String stopId;
     String label;
     String stopStartTime;
     String stopEndTime;
+    String status;
 
     protected AgendaModel(Parcel in) {
+        id = in.readString();
         stopId = in.readString();
         label = in.readString();
         stopStartTime = in.readString();
         stopEndTime = in.readString();
+        status = in.readString();
     }
 
     @Override
     public void writeToParcel(Parcel dest, int flags) {
+        dest.writeString(id);
         dest.writeString(stopId);
         dest.writeString(label);
         dest.writeString(stopStartTime);
         dest.writeString(stopEndTime);
+        dest.writeString(status);
     }
 
     @Override
@@ -40,6 +46,14 @@ public class AgendaModel implements Parcelable {
             return new AgendaModel[size];
         }
     };
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
 
     public String getStopId() {
         return stopId;
@@ -73,11 +87,21 @@ public class AgendaModel implements Parcelable {
         this.stopEndTime = stopEndTime;
     }
 
-    public AgendaModel(String stopId, String label, String stopStartTime, String stopEndTime) {
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public AgendaModel(String id, String stopId, String label, String stopStartTime, String stopEndTime, String status) {
+        this.id = id;
         this.stopId = stopId;
         this.label = label;
         this.stopStartTime = stopStartTime;
         this.stopEndTime = stopEndTime;
+        this.status = status;
     }
 
     public AgendaModel() {
@@ -86,10 +110,12 @@ public class AgendaModel implements Parcelable {
     @Override
     public String toString() {
         return "AgendaModel{" +
-                "stopId='" + stopId + '\'' +
+                "id='" + id + '\'' +
+                ", stopId='" + stopId + '\'' +
                 ", label='" + label + '\'' +
                 ", stopStartTime='" + stopStartTime + '\'' +
                 ", stopEndTime='" + stopEndTime + '\'' +
+                ", status='" + status + '\'' +
                 '}';
     }
 }
