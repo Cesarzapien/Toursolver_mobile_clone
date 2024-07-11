@@ -2,6 +2,7 @@ package com.cesar.toursolvermobile2;
 
 import android.Manifest;
 import android.app.Activity;
+import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -9,9 +10,20 @@ import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationManager;
 import android.net.Uri;
+import android.os.Handler;
 import android.provider.Settings;
 import android.util.Log;
+import android.view.View;
+import android.view.animation.Animation;
+import android.widget.AutoCompleteTextView;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.ImageButton;
+import android.widget.ImageView;
+import android.widget.Spinner;
+import android.widget.TextView;
 import android.widget.Toast;
+import android.view.animation.AnimationUtils;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -25,12 +37,18 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
+import com.cesar.toursolvermobile2.RoutingExample;
+import com.google.android.material.textfield.TextInputEditText;
+import com.google.android.material.textfield.TextInputLayout;
 import com.here.sdk.core.GeoCoordinates;
+import com.here.sdk.core.GeoCoordinatesUpdate;
 import com.here.sdk.core.GeoOrientationUpdate;
 import com.here.sdk.core.engine.SDKNativeEngine;
 import com.here.sdk.core.engine.SDKOptions;
 import com.here.sdk.core.errors.InstantiationErrorException;
 import com.here.sdk.mapview.LocationIndicator;
+import com.here.sdk.mapview.MapCameraAnimation;
+import com.here.sdk.mapview.MapCameraAnimationFactory;
 import com.here.sdk.mapview.MapError;
 import com.here.sdk.mapview.MapMeasure;
 import com.here.sdk.mapview.MapPolyline;
@@ -38,19 +56,23 @@ import com.here.sdk.mapview.MapScene;
 import com.here.sdk.mapview.MapScheme;
 import com.here.sdk.mapview.MapView;
 import com.here.sdk.transport.TruckSpecifications;
-import com.here.sdk.transport.TruckType;
+import com.here.time.Duration;
 
 public class mapHelper{
-
     private static final int REQUEST_INTERNET_PERMISSION = 1;
-    private static final int REQUEST_LOCATION_PERMISSION = 2;
+    static final int REQUEST_LOCATION_PERMISSION = 2;
     private PermissionResultCallback permissionResultCallback;
     private LocationIndicator currentLocationIndicator;
-    private final List<MapPolyline> mapPolylines = new ArrayList<>();
+    private int toneladas, alto, ancho, largo;
+    public static final int DEFAULT_TONELADAS = 17;
+    public static final int DEFAULT_ALTO = 3;
+    public static final int DEFAULT_ANCHO = 4;
+    public static final int DEFAULT_LARGO = 8;
+    private Dialog gpsDialog;
 
     public void initializeHERESDK(Context context) {
-        String accessKeyID = "kFQ5gYJvmOwdoeA94GlfWw";
-        String accessKeySecret = "l2XlfnoRv8eY4X40KfGOB6s5u820HsCARXLvLMBiM-wmDLcF6dLGWNLNR-Y1-cQ7Cr_PhrZIz1Aurjm245tEXg";
+        String accessKeyID = "NelTCYuCjtoWMisV8QyHyw";
+        String accessKeySecret = "5MR6njdMDh_GwgfaZPLEuo_psaA41KWyqY-uGjEZ2deOSvzZ4U4kB7vlZga97yV05IJr18K2Zt_rdKieWzPmbw";
         SDKOptions options = new SDKOptions(accessKeyID, accessKeySecret);
         try {
             SDKNativeEngine.makeSharedInstance(context, options);
@@ -59,16 +81,27 @@ public class mapHelper{
         }
     }
 
-    public void loadMapScene(MapView mapView) {
+    public void loadMapScene(MapView mapView, Context context) {
         mapView.getMapScene().loadScene(MapScheme.NORMAL_DAY, new MapScene.LoadSceneCallback() {
             @Override
             public void onLoadScene(@Nullable MapError mapError) {
                 if (mapError == null) {
-                    double distanceInMeters = 1000 * 10;
-                    MapMeasure mapMeasureZoom = new MapMeasure(MapMeasure.Kind.DISTANCE, distanceInMeters);
-                    mapView.getCamera().lookAt(new GeoCoordinates(21.144301, -101.691806), mapMeasureZoom);
+                    LocationManager locationManager = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
+                    if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+                        Location lastKnownLocation = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+                        if (lastKnownLocation != null) {
+                            double distanceInMeters = 1000 * 0.5;
+                            MapMeasure mapMeasureZoom = new MapMeasure(MapMeasure.Kind.DISTANCE, distanceInMeters);
+                            GeoCoordinates userCoordinates = new GeoCoordinates(lastKnownLocation.getLatitude(), lastKnownLocation.getLongitude());
+                            mapView.getCamera().lookAt(userCoordinates, mapMeasureZoom);
+                        } else {
+                            Log.d("loadMapScene()", "No se pudo obtener la última ubicación conocida");
+                        }
+                    } else {
+                        Log.d("loadMapScene()", "Permiso de ubicación no concedido");
+                    }
                 } else {
-                    Log.d("loadMapScene()", "Loading map failed: mapError: " + mapError.name());
+                    Log.d("loadMapScene()", "Error al cargar la escena del mapa: " + mapError.name());
                 }
             }
         });
@@ -120,19 +153,45 @@ public class mapHelper{
         mapView.getCamera().setOrientationAtTarget(new GeoOrientationUpdate(bearing, tilt));
     }
 
-    public void showGPSDisabledDialog(Activity activity) {
-        AlertDialog.Builder builder = new AlertDialog.Builder(activity);
-        builder.setTitle("GPS desactivado");
-        builder.setMessage("El GPS está desactivado. ¿Desea activarlo?");
-        builder.setPositiveButton("Activar GPS", new DialogInterface.OnClickListener() {
+    public void showGPSDisabledDialog(final Activity activity) {
+        if (gpsDialog != null && gpsDialog.isShowing()) {
+            return;
+        }
+
+        gpsDialog = new Dialog(activity);
+        gpsDialog.setContentView(R.layout.activar_gps);
+        gpsDialog.setCancelable(false);
+        gpsDialog.setCanceledOnTouchOutside(false);
+
+        Button btnEnableGPS = gpsDialog.findViewById(R.id.btnEnableGPS);
+        Button btnCancel = gpsDialog.findViewById(R.id.btnCancel);
+
+        btnEnableGPS.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(DialogInterface dialog, int which) {
+            public void onClick(View v) {
                 Intent intent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
                 activity.startActivity(intent);
+                gpsDialog.dismiss();
             }
         });
-        builder.setNegativeButton("Cancelar", null);
-        builder.show();
+
+        btnCancel.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                gpsDialog.dismiss();
+                Toast.makeText(activity, "El GPS es necesario para usar esta app", Toast.LENGTH_LONG).show();
+
+                new Handler().postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (!isGPSEnabled(activity)) {
+                            showGPSDisabledDialog(activity);
+                        }
+                    }
+                }, 100);
+            }
+        });
+        gpsDialog.show();
     }
 
     public boolean isGPSEnabled(Activity activity) {
@@ -145,23 +204,6 @@ public class mapHelper{
         if (sdkNativeEngine != null) {
             sdkNativeEngine.dispose();
             SDKNativeEngine.setSharedInstance(null);
-        }
-    }
-
-    public void moverCamaraAUbicacionActual(Activity activity, MapView mapView) {
-        if (ContextCompat.checkSelfPermission(activity, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-            LocationManager locationManager = (LocationManager) activity.getSystemService(Context.LOCATION_SERVICE);
-            Location lastKnownLocation = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
-            if (lastKnownLocation != null) {
-                GeoCoordinates userCoordinates = new GeoCoordinates(lastKnownLocation.getLatitude(), lastKnownLocation.getLongitude());
-                double distanceInMeters = 1000 * 0.5;
-                MapMeasure mapMeasureZoom = new MapMeasure(MapMeasure.Kind.DISTANCE, distanceInMeters);
-                mapView.getCamera().lookAt(userCoordinates, mapMeasureZoom);
-            } else {
-                Toast.makeText(activity, "No se pudo obtener la ubicación actual", Toast.LENGTH_SHORT).show();
-            }
-        } else {
-            Toast.makeText(activity, "Permiso de ubicación no concedido", Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -191,8 +233,6 @@ public class mapHelper{
         return coordenadasDestino;
     }
 
-
-
     public void generarRuta(Activity activity, MapView mapView, GeoCoordinates coordenadasDestino) {
         if (ContextCompat.checkSelfPermission(activity, android.Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
             LocationManager locationManager = (LocationManager) activity.getSystemService(Context.LOCATION_SERVICE);
@@ -200,12 +240,160 @@ public class mapHelper{
             if (lastKnownLocation != null) {
                 GeoCoordinates coordenadasInicio = new GeoCoordinates(lastKnownLocation.getLatitude(), lastKnownLocation.getLongitude());
                 RoutingExample routingExample = new RoutingExample(activity, mapView, coordenadasInicio);
+                routingExample.clearRoute();
                 routingExample.addRoute(coordenadasInicio, coordenadasDestino);
             } else {
                 Toast.makeText(activity, "No se pudo obtener la ubicación actual", Toast.LENGTH_SHORT).show();
             }
         } else {
             Toast.makeText(activity, "Permiso de ubicación no concedido", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    public void addLocationIndicator(MapView mapView, GeoCoordinates geoCoordinates, LocationIndicator.IndicatorStyle indicatorStyle) {
+        removeLocationIndicator();
+
+        LocationIndicator locationIndicator = new LocationIndicator();
+        locationIndicator.setLocationIndicatorStyle(indicatorStyle);
+        com.here.sdk.core.Location location = new com.here.sdk.core.Location(geoCoordinates);
+        location.time = new Date();
+        location.bearingInDegrees = getRandom(0, 360);
+
+        locationIndicator.updateLocation(location);
+
+        locationIndicator.enable(mapView);
+
+        currentLocationIndicator = locationIndicator;
+    }
+
+    public void removeLocationIndicator() {
+        if (currentLocationIndicator != null) {
+            currentLocationIndicator.disable();
+            currentLocationIndicator = null;
+        }
+    }
+
+    private double getRandom(double min, double max) {
+        return min + Math.random() * (max - min);
+    }
+
+    public TruckSpecifications createTruckSpecifications() {
+        TruckSpecifications truckSpecifications = new TruckSpecifications();
+        truckSpecifications.grossWeightInKilograms = DEFAULT_TONELADAS * 1000;
+        truckSpecifications.heightInCentimeters = DEFAULT_ALTO * 100;
+        truckSpecifications.widthInCentimeters = DEFAULT_ANCHO * 100;
+        truckSpecifications.lengthInCentimeters = DEFAULT_LARGO * 100;
+
+        if (toneladas > 0) {
+            truckSpecifications.grossWeightInKilograms = toneladas * 1000;
+        }
+        if (alto > 0) {
+            truckSpecifications.heightInCentimeters = alto * 100;
+        }
+        if (ancho > 0) {
+            truckSpecifications.widthInCentimeters = ancho * 100;
+        }
+        if (largo > 0) {
+            truckSpecifications.lengthInCentimeters = largo * 100;
+        }
+        return truckSpecifications;
+    }
+
+    public void setTruckSpecifications(int toneladas, int alto, int ancho, int largo) {
+        this.toneladas = toneladas;
+        this.alto = alto;
+        this.ancho = ancho;
+        this.largo = largo;
+    }
+
+    /*public void mostrarMenu(Activity activity) {
+        View viewDetalles = activity.findViewById(R.id.viewDetalles);
+        TextView txtCamion = activity.findViewById(R.id.txtCamion);
+        TextView txtIndicacion = activity.findViewById(R.id.txtIndicacion);
+        TextInputLayout etPeso = activity.findViewById(R.id.etPeso);
+        TextInputLayout etAltura = activity.findViewById(R.id.etAltura);
+        TextInputLayout etAncho = activity.findViewById(R.id.etAncho);
+        TextInputLayout etLongitud = activity.findViewById(R.id.etLongitud);
+        TextInputLayout etSpinner = activity.findViewById(R.id.etSpinner);
+        AutoCompleteTextView AutOpciones = activity.findViewById(R.id.AutOpciones);
+        ImageView imgTonelada = activity.findViewById(R.id.imgTonelada);
+        ImageView imgAltura = activity.findViewById(R.id.imgAltura);
+        ImageView imgAncho = activity.findViewById(R.id.imgAncho);
+        ImageView imgLargo = activity.findViewById(R.id.imgLargo);
+        Button btnEnviar = activity.findViewById(R.id.btnEnviar);
+        Button btnGuardar = activity.findViewById(R.id.btnGuardar);
+        ImageButton btnCerrar = activity.findViewById(R.id.btnCerrar);
+        Animation animEntrada = AnimationUtils.loadAnimation(activity, R.anim.entrada);
+        Animation animSalida = AnimationUtils.loadAnimation(activity, R.anim.salida);
+
+        int visibility = (viewDetalles.getVisibility() == View.VISIBLE) ? View.GONE : View.VISIBLE;
+
+        if (visibility == View.VISIBLE) {
+            viewDetalles.startAnimation(animEntrada);
+            txtCamion.startAnimation(animEntrada);
+            txtIndicacion.startAnimation(animEntrada);
+            etPeso.startAnimation(animEntrada);
+            etAltura.startAnimation(animEntrada);
+            etAncho.startAnimation(animEntrada);
+            etLongitud.startAnimation(animEntrada);
+            etSpinner.startAnimation(animEntrada);
+            AutOpciones.startAnimation(animEntrada);
+            imgTonelada.startAnimation(animEntrada);
+            imgAltura.startAnimation(animEntrada);
+            imgAncho.startAnimation(animEntrada);
+            imgLargo.startAnimation(animEntrada);
+            btnEnviar.startAnimation(animEntrada);
+            btnGuardar.startAnimation(animEntrada);
+            btnCerrar.startAnimation(animEntrada);
+        } else {
+            viewDetalles.startAnimation(animSalida);
+            txtCamion.startAnimation(animSalida);
+            txtIndicacion.startAnimation(animSalida);
+            etPeso.startAnimation(animSalida);
+            etAltura.startAnimation(animSalida);
+            etAncho.startAnimation(animSalida);
+            etLongitud.startAnimation(animSalida);
+            etSpinner.startAnimation(animSalida);
+            AutOpciones.startAnimation(animSalida);
+            imgTonelada.startAnimation(animSalida);
+            imgAltura.startAnimation(animSalida);
+            imgAncho.startAnimation(animSalida);
+            imgLargo.startAnimation(animSalida);
+            btnEnviar.startAnimation(animSalida);
+            btnGuardar.startAnimation(animSalida);
+            btnCerrar.startAnimation(animSalida);
+        }
+
+        viewDetalles.setVisibility(visibility);
+        txtCamion.setVisibility(visibility);
+        txtIndicacion.setVisibility(visibility);
+        etPeso.setVisibility(visibility);
+        etAltura.setVisibility(visibility);
+        etAncho.setVisibility(visibility);
+        etLongitud.setVisibility(visibility);
+        etSpinner.setVisibility(visibility);
+        AutOpciones.setVisibility(visibility);
+        imgTonelada.setVisibility(visibility);
+        imgAltura.setVisibility(visibility);
+        imgAncho.setVisibility(visibility);
+        imgLargo.setVisibility(visibility);
+        btnEnviar.setVisibility(visibility);
+        btnGuardar.setVisibility(visibility);
+        btnCerrar.setVisibility(visibility);
+    }*/
+
+    public void flyTo(MapView mapView, GeoCoordinates geoCoordinates) {
+        GeoCoordinatesUpdate geoCoordinatesUpdate = new GeoCoordinatesUpdate(geoCoordinates);
+        double bowFactor = 1;
+        MapCameraAnimation animation = MapCameraAnimationFactory.flyTo(geoCoordinatesUpdate, bowFactor, Duration.ofSeconds(3));
+        mapView.getCamera().startAnimation(animation);
+    }
+
+    public void checkGPSStatus(Activity activity) {
+        if (!isGPSEnabled(activity)) {
+            showGPSDisabledDialog(activity);
+            Toast.makeText(activity, "Activa el gps", Toast.LENGTH_SHORT).show();
+        } else {
         }
     }
 }

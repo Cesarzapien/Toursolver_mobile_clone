@@ -18,6 +18,14 @@
         <item name="android:progressTint">@color/colorPrimaryDark</item> <!-- Cambia colorPrimaryDark al color que desees para el rastro -->
     </style>
 
+    <style name="CustomDialogTheme" parent="Theme.AppCompat.Light.Dialog.Alert">
+        <item name="colorPrimary">@color/purple_200</item>
+        <item name="colorPrimaryDark">@color/purple_500</item>
+        <item name="colorAccent">@color/purple_700</item>
+        <item name="android:textColorPrimary">@android:color/white</item>
+        <item name="android:background">@drawable/rounded_dialog_background</item>
+    </style>
+
 
 
     <style name="Theme.TourSolverMobile2" parent="Base.Theme.TourSolverMobile2" />

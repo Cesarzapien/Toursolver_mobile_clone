@@ -2,9 +2,13 @@ package com.cesar.toursolvermobile2;
 
 import static android.content.ContentValues.TAG;
 
+import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.graphics.drawable.GradientDrawable;
+import android.location.Location;
+import android.location.LocationManager;
 import android.os.Bundle;
 import android.os.CountDownTimer;
 import android.util.Log;
@@ -379,20 +383,46 @@ public class InicioActivity extends DrawerBaseActivity {
     }
 
     private void loadMapScene() {
-        // Load a scene from the HERE SDK to render the map with a map scheme.
-        mapView.getMapScene().loadScene(MapScheme.NORMAL_DAY, new MapScene.LoadSceneCallback() {
-            @Override
-            public void onLoadScene(@Nullable MapError mapError) {
-                if (mapError == null) {
-                    double distanceInMeters = 1000 * 10;
-                    MapMeasure mapMeasureZoom = new MapMeasure(MapMeasure.Kind.DISTANCE, distanceInMeters);
-                    mapView.getCamera().lookAt(
-                            new GeoCoordinates(52.530932, 13.384915), mapMeasureZoom);
-                } else {
-                    Log.d("loadMapScene()", "Loading map failed: mapError: " + mapError.name());
-                }
+        // Verifica si tienes permisos para acceder a la ubicación del usuario
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+            // Obtén la última ubicación conocida del usuario
+            LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+            Location lastKnownLocation = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+            if (lastKnownLocation != null) {
+                // Si se encuentra una ubicación conocida, mueve la cámara del mapa a esa ubicación
+                GeoCoordinates userCoordinates = new GeoCoordinates(lastKnownLocation.getLatitude(), lastKnownLocation.getLongitude());
+                //routingExample = new RoutingExample(CitaActivity.this, mapView,userCoordinates);
+                mapView.getCamera().lookAt(userCoordinates);
             }
-        });
+        }
+        // Verifica si es después de las 8:00 p.m. y antes de las 6:00 a.m.
+        Calendar calendar = Calendar.getInstance();
+        int hour = calendar.get(Calendar.HOUR_OF_DAY);
+        if (hour >= 20 || hour < 6) {
+            // Carga la escena del mapa con el esquema MapScheme.NORMAL_NIGHT
+            mapView.getMapScene().loadScene(MapScheme.NORMAL_NIGHT, new MapScene.LoadSceneCallback() {
+                @Override
+                public void onLoadScene(@Nullable MapError mapError) {
+                    if (mapError == null) {
+                        // No se produjo ningún error al cargar la escena del mapa
+                    } else {
+                        Log.d("loadMapScene()", "Loading map failed: mapError: " + mapError.name());
+                    }
+                }
+            });
+        } else {
+            // Carga la escena del mapa con el esquema MapScheme.NORMAL_DAY
+            mapView.getMapScene().loadScene(MapScheme.NORMAL_DAY, new MapScene.LoadSceneCallback() {
+                @Override
+                public void onLoadScene(@Nullable MapError mapError) {
+                    if (mapError == null) {
+                        // No se produjo ningún error al cargar la escena del mapa
+                    } else {
+                        Log.d("loadMapScene()", "Loading map failed: mapError: " + mapError.name());
+                    }
+                }
+            });
+        }
     }
 
     private void disposeHERESDK() {

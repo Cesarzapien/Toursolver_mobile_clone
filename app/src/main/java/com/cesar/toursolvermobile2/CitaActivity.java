@@ -2,12 +2,17 @@ package com.cesar.toursolvermobile2;
 
 import static android.content.ContentValues.TAG;
 
+import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.location.Location;
+import android.location.LocationManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Gravity;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
@@ -17,10 +22,14 @@ import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 
 import com.cesar.toursolvermobile2.model.ApiResponse;
 import com.cesar.toursolvermobile2.model.Geocode;
@@ -32,6 +41,16 @@ import com.cesar.toursolvermobile2.model.PlannedOrder;
 import com.cesar.toursolvermobile2.model.ResponsePut;
 import com.cesar.toursolvermobile2.model.updateOrdersOfOperationalPlanning;
 import com.here.sdk.core.GeoCoordinates;
+import com.here.sdk.core.engine.SDKNativeEngine;
+import com.here.sdk.core.engine.SDKOptions;
+import com.here.sdk.core.errors.InstantiationErrorException;
+import com.here.sdk.mapview.LocationIndicator;
+import com.here.sdk.mapview.MapCamera;
+import com.here.sdk.mapview.MapError;
+import com.here.sdk.mapview.MapMeasure;
+import com.here.sdk.mapview.MapPolyline;
+import com.here.sdk.mapview.MapScene;
+import com.here.sdk.mapview.MapScheme;
 import com.here.sdk.mapview.MapView;
 
 import java.text.SimpleDateFormat;
@@ -54,10 +73,12 @@ import retrofit2.http.Headers;
 import retrofit2.http.PUT;
 import retrofit2.http.Query;
 
-public class CitaActivity extends AppCompatActivity implements mapHelper.PermissionResultCallback, PlatformPositioningProvider.PlatformLocationListener, AbandonDialog.AbandonDialogListener {
+public class CitaActivity extends AppCompatActivity implements PlatformPositioningProvider.PlatformLocationListener, AbandonDialog.AbandonDialogListener {
 
     private ImageButton Back_button,circularButton1,circularButton2;
     ActualizarAlert actualizarAlert = new ActualizarAlert(CitaActivity.this);
+    private static final int REQUEST_INTERNET_PERMISSION = 100;
+    private static final int REQUEST_LOCATION_PERMISSION = 101;
     public String hora_global;
     public String hora_global2,zipcode;
     private TextView nameLabel, zipCode, dateLabel, hourLabel, nameLabel2,actions,distance_label,time_label,description_label,salida_label,comentarios_label;
@@ -68,10 +89,11 @@ public class CitaActivity extends AppCompatActivity implements mapHelper.Permiss
     private boolean rutaGenerada,updateData;
     private GeoCoordinates coordenadasDestino;
 
+    private MapScene mapScene;
     private PlatformPositioningProvider positioningProvider;
     private double achievementLat;
     private double achievementLon;
-    private Button button1,button2,abandon_button,start_button,cancelButton,continueButton,informacion,acciones,informe;
+    private Button button1,button2,abandon_button,start_button,cancelButton,continueButton,informacion,acciones,informe,button_map;
     private LinearLayout button_layout,start_layout,cancel_layout,acciones_linear,acciones_linear_two,informe_lineal,informe_lineal_two;
     private RelativeLayout informacion_relative;
 
@@ -94,6 +116,11 @@ public class CitaActivity extends AppCompatActivity implements mapHelper.Permiss
     private List<OperationalOrderAchievement> achievements2;
     private List<Geocode> geocodes;
     private List<Geocode> geocodes2;
+    final List<MapPolyline> mapPolylinesTrafico = new ArrayList<>();
+    MapPolyline rutaActual;
+    private MapCamera mapCamera;
+
+    private RoutingExample routingExample;
 
     public interface ApiService2 {
         @GET("fulfillment")
@@ -128,30 +155,28 @@ public class CitaActivity extends AppCompatActivity implements mapHelper.Permiss
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        mMapHelper = new mapHelper();
-        mMapHelper.initializeHERESDK(this);
+
+        // Usually, you need to initialize the HERE SDK only once during the lifetime of an application.
+        initializeHERESDK();
 
         setContentView(R.layout.activity_cita);
 
-        // Get a MapView instance from the layout.
+        // Creamos la instancia del mapa
         mapView = findViewById(R.id.map_view);
         mapView.onCreate(savedInstanceState);
+        mapCamera = mapView.getCamera();
+        mapScene = mapView.getMapScene();
 
-        mMapHelper.permisoInternet(this, this);
-        mMapHelper.permisoLocalizacion(this, this);
+        loadMapScene();
 
-        mMapHelper.tiltMap(mapView);
-
-
-        if (!mMapHelper.isGPSEnabled(CitaActivity.this)) {
-            mMapHelper.showGPSDisabledDialog(CitaActivity.this);
-        } else {
-        }
-
+        // Solicitar permisos de internet y de localización
+        requestInternetPermission();
+        requestLocationPermission();
 
         // Initialize positioning provider
         positioningProvider = new PlatformPositioningProvider(this);
 
+        button_map = findViewById(R.id.ButtonMap);
         acciones_linear = findViewById(R.id.acciones_linear);
         acciones_linear_two = findViewById(R.id.acciones_linear_two);
         informacion_relative = findViewById(R.id.informacion_relative);
@@ -299,12 +324,43 @@ public class CitaActivity extends AppCompatActivity implements mapHelper.Permiss
             // Obtener latitud y longitud de achievements
             achievementLat = operationalOrderAchievement.getLat();
             achievementLon = operationalOrderAchievement.getLon();
+            Log.d(TAG,"lat "+achievementLat);
+            Log.d(TAG,"lon "+achievementLon);
 
-            coordenadasDestino = new GeoCoordinates(achievementLat,achievementLon);
+
+
+            GeoCoordinates coordinates = createGeoCoordinates(achievementLat, achievementLon);
+            coordenadasDestino = coordinates;
+            String coordinatesString = geoCoordinatesToString(coordinates);
+            String coordinatesString2 = geoCoordinatesToString(coordenadasDestino);
+
+
+            Log.d(TAG,"coords "+coordinatesString);
+            Log.d(TAG,"coords2 "+coordinatesString2);
 
         }
 
-        mMapHelper.loadMapScene(mapView);
+        button_map.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+
+                if (ContextCompat.checkSelfPermission(CitaActivity.this, android.Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+                    LocationManager locationManager = (LocationManager) CitaActivity.this.getSystemService(Context.LOCATION_SERVICE);
+                    Location lastKnownLocation = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+                    if (lastKnownLocation != null) {
+                        GeoCoordinates coordenadasInicio = new GeoCoordinates(lastKnownLocation.getLatitude(), lastKnownLocation.getLongitude());
+                        Log.d(TAG,"Coord inicio "+coordenadasInicio.toString());
+                        Log.d(TAG,"Coord Destino "+coordenadasDestino.toString());
+                        routingExample.addRoute(coordenadasInicio, coordenadasDestino);
+                    } else {
+                        Toast.makeText(CitaActivity.this, "No se pudo obtener la ubicación actual", Toast.LENGTH_SHORT).show();
+                    }
+                } else {
+                    Toast.makeText(CitaActivity.this, "Permiso de ubicación no concedido", Toast.LENGTH_SHORT).show();
+                }
+
+            }
+        });
 
         button2.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -413,7 +469,6 @@ public class CitaActivity extends AppCompatActivity implements mapHelper.Permiss
                 acciones_linear.setVisibility(View.GONE);
                 informe_lineal.setVisibility(View.VISIBLE);
                 informe_lineal_two.setVisibility(View.VISIBLE);
-
             }
         });
 
@@ -852,6 +907,90 @@ public class CitaActivity extends AppCompatActivity implements mapHelper.Permiss
 
     }
 
+    private void initializeHERESDK() {
+        // Set your credentials for the HERE SDK.
+        String accessKeyID = "kFQ5gYJvmOwdoeA94GlfWw";
+        String accessKeySecret = "l2XlfnoRv8eY4X40KfGOB6s5u820HsCARXLvLMBiM-wmDLcF6dLGWNLNR-Y1-cQ7Cr_PhrZIz1Aurjm245tEXg";
+        SDKOptions options = new SDKOptions(accessKeyID, accessKeySecret);
+        try {
+            Context context = this;
+            SDKNativeEngine.makeSharedInstance(context, options);
+        } catch (InstantiationErrorException e) {
+            throw new RuntimeException("Initialization of HERE SDK failed: " + e.error.name());
+        }
+    }
+
+    private void loadMapScene() {
+        // Verifica si tienes permisos para acceder a la ubicación del usuario
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+            // Obtén la última ubicación conocida del usuario
+            LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+            Location lastKnownLocation = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+            if (lastKnownLocation != null) {
+                // Si se encuentra una ubicación conocida, mueve la cámara del mapa a esa ubicación
+                GeoCoordinates userCoordinates = new GeoCoordinates(lastKnownLocation.getLatitude(), lastKnownLocation.getLongitude());
+                routingExample = new RoutingExample(CitaActivity.this, mapView,userCoordinates);
+                mapView.getCamera().lookAt(userCoordinates);
+            }
+        }
+        // Verifica si es después de las 8:00 p.m. y antes de las 6:00 a.m.
+        Calendar calendar = Calendar.getInstance();
+        int hour = calendar.get(Calendar.HOUR_OF_DAY);
+        if (hour >= 20 || hour < 6) {
+            // Carga la escena del mapa con el esquema MapScheme.NORMAL_NIGHT
+            mapView.getMapScene().loadScene(MapScheme.NORMAL_NIGHT, new MapScene.LoadSceneCallback() {
+                @Override
+                public void onLoadScene(@Nullable MapError mapError) {
+                    if (mapError == null) {
+                        // No se produjo ningún error al cargar la escena del mapa
+                    } else {
+                        Log.d("loadMapScene()", "Loading map failed: mapError: " + mapError.name());
+                    }
+                }
+            });
+        } else {
+            // Carga la escena del mapa con el esquema MapScheme.NORMAL_DAY
+            mapView.getMapScene().loadScene(MapScheme.NORMAL_DAY, new MapScene.LoadSceneCallback() {
+                @Override
+                public void onLoadScene(@Nullable MapError mapError) {
+                    if (mapError == null) {
+                        // No se produjo ningún error al cargar la escena del mapa
+                    } else {
+                        Log.d("loadMapScene()", "Loading map failed: mapError: " + mapError.name());
+                    }
+                }
+            });
+        }
+    }
+
+    private void disposeHERESDK() {
+        // Free HERE SDK resources before the application shuts down.
+        // Usually, this should be called only on application termination.
+        // Afterwards, the HERE SDK is no longer usable unless it is initialized again.
+        SDKNativeEngine sdkNativeEngine = SDKNativeEngine.getSharedInstance();
+        if (sdkNativeEngine != null) {
+            sdkNativeEngine.dispose();
+            // For safety reasons, we explicitly set the shared instance to null to avoid situations,
+            // where a disposed instance is accidentally reused.
+            SDKNativeEngine.setSharedInstance(null);
+        }
+    }
+
+    public void showCustomToast(String message) {
+        LayoutInflater inflater = getLayoutInflater();
+        View layout = inflater.inflate(R.layout.custom_toast, findViewById(R.id.custom_toast_container));
+
+        TextView text = layout.findViewById(R.id.toast_text);
+        text.setText(message);
+
+        Toast toast = new Toast(getApplicationContext());
+        toast.setDuration(Toast.LENGTH_SHORT);
+        toast.setView(layout);
+
+        toast.setGravity(Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL, 0, 200);
+        toast.show();
+    }
+
     private void refreshData(boolean updateData) {
         if (updateData) {
             // Mostrar el diálogo de carga
@@ -956,27 +1095,79 @@ public class CitaActivity extends AppCompatActivity implements mapHelper.Permiss
         }
     }
 
-    @Override
-    public void permisoConcedido() {
+    // Método para solicitar el permiso de Internet
+    private void requestInternetPermission() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.INTERNET) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.INTERNET}, REQUEST_INTERNET_PERMISSION);
+        } else {
+            // El permiso ya está concedido
+        }
     }
 
+    // Método para solicitar el permiso de localización
+    private void requestLocationPermission() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, REQUEST_LOCATION_PERMISSION);
+        } else {
+            // El permiso ya está concedido
+        }
+    }
+
+    // Método para manejar las respuestas de las solicitudes de permisos
     @Override
-    public void permisoDenegado() {
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        switch (requestCode) {
+            case REQUEST_INTERNET_PERMISSION:
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    // El permiso de Internet fue concedido
+                } else {
+                    // El permiso de Internet fue denegado
+                }
+                break;
+            case REQUEST_LOCATION_PERMISSION:
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    // El permiso de localización fue concedido
+                } else {
+                    // El permiso de localización fue denegado
+                }
+                break;
+        }
     }
 
     private void startLocationUpdates() {
+        // Start location updates
         positioningProvider.startLocating(this);
     }
 
     private void stopLocationUpdates() {
+        // Stop location updates
         positioningProvider.stopLocating();
     }
 
     @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        mMapHelper.onRequestPermissionsResult(requestCode, permissions, grantResults);
+    public void onLocationUpdated(Location location) {
+        // Actualiza la posición del usuario en el mapa
+        //updateMapUserLocation(location.getLatitude(), location.getLongitude());
+
+        // Agrega un nuevo indicador de ubicación en las nuevas coordenadas
+        GeoCoordinates userCoordinates = new GeoCoordinates(location.getLatitude(), location.getLongitude());
+        //addLocationIndicator(userCoordinates, LocationIndicator.IndicatorStyle.PEDESTRIAN);
     }
+
+    private GeoCoordinates createGeoCoordinates(double latitude, double longitude) {
+        return new GeoCoordinates(latitude, longitude);
+    }
+
+    private String geoCoordinatesToString(GeoCoordinates coordinates) {
+        if (coordinates == null) {
+            return "Coordinates not available";
+        }
+        return "Latitude: " + coordinates.latitude + ", Longitude: " + coordinates.longitude +
+                (coordinates.altitude != null ? ", Altitude: " + coordinates.altitude : "");
+    }
+
+
 
     @Override
     protected void onPause() {
@@ -995,20 +1186,13 @@ public class CitaActivity extends AppCompatActivity implements mapHelper.Permiss
     @Override
     protected void onDestroy() {
         mapView.onDestroy();
+        disposeHERESDK();
         super.onDestroy();
-        mMapHelper.disposeHERESDK();
     }
 
     @Override
     protected void onSaveInstanceState(@NonNull Bundle outState) {
         mapView.onSaveInstanceState(outState);
         super.onSaveInstanceState(outState);
-    }
-
-
-    @Override
-    public void onLocationUpdated(Location location) {
-        GeoCoordinates userCoordinates = new GeoCoordinates(location.getLatitude(), location.getLongitude());
-
     }
 }
