@@ -69,6 +69,7 @@ public class InicioActivity extends DrawerBaseActivity {
     TextView userNamee,userEmaill,profileName;
     ActivityInicioBinding activityInicioBinding;
     private CountDownTimer mCountDownTimer;
+    private MapItemsExample mapItemsExample;
     private static final long COUNTDOWN_TIME = 600000; // 10 minutos
     private boolean isPaused = true;
     private boolean updateData;
@@ -86,9 +87,13 @@ public class InicioActivity extends DrawerBaseActivity {
     public String hora_global;
 
     private ImageButton boton_cita;
+    private List<LastKnownPosition> lastKnownPositions;
+    private List<OperationalOrderAchievement> achievements;
     private List<LastKnownPosition> lastKnownPositions2;
     private List<PlannedOrder> plannedOrders2;
+    private List<PlannedOrder> plannedOrders;
     private List<PlannedOrder> plannedOrdersAgenda2;
+    private List<Order> orders;
     private List<Order> orders2;
     private List<Order> ordersAgenda2;
     private List<OperationalOrderAchievement> achievements2;
@@ -110,7 +115,6 @@ public class InicioActivity extends DrawerBaseActivity {
         mapView.onCreate(savedInstanceState);
 
         loadMapScene();
-
         // Referenciar el TextView de la próxima cita
         agenda = findViewById(R.id.button_agenda);
         sitios = findViewById(R.id.button_sitios);
@@ -137,10 +141,10 @@ public class InicioActivity extends DrawerBaseActivity {
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
 
         // Obtener los datos de PlannedOrder y Order del intent
-        List<LastKnownPosition> lastKnownPositions = getIntent().getParcelableArrayListExtra("positioning");
-        List<OperationalOrderAchievement> achievements = getIntent().getParcelableArrayListExtra("achievements");
-        List<PlannedOrder> plannedOrders = getIntent().getParcelableArrayListExtra("plannedOrders");
-        List<Order> orders = getIntent().getParcelableArrayListExtra("orders");
+        lastKnownPositions = getIntent().getParcelableArrayListExtra("positioning");
+        achievements = getIntent().getParcelableArrayListExtra("achievements");
+        plannedOrders = getIntent().getParcelableArrayListExtra("plannedOrders");
+        orders = getIntent().getParcelableArrayListExtra("orders");
         List<OperationalOrderAchievement> achievementsAgenda = getIntent().getParcelableArrayListExtra("achievementsAgenda");
         List<PlannedOrder> plannedOrdersAgenda = getIntent().getParcelableArrayListExtra("plannedOrdersAgenda");
         List<Order> ordersAgenda = getIntent().getParcelableArrayListExtra("ordersAgenda");
@@ -404,6 +408,8 @@ public class InicioActivity extends DrawerBaseActivity {
                 @Override
                 public void onLoadScene(@Nullable MapError mapError) {
                     if (mapError == null) {
+                        mapItemsExample = new MapItemsExample(InicioActivity.this, mapView,plannedOrders,orders);
+                        //mapItemsExample.showAnchoredMapMarkers();
                         // No se produjo ningún error al cargar la escena del mapa
                     } else {
                         Log.d("loadMapScene()", "Loading map failed: mapError: " + mapError.name());
@@ -416,6 +422,8 @@ public class InicioActivity extends DrawerBaseActivity {
                 @Override
                 public void onLoadScene(@Nullable MapError mapError) {
                     if (mapError == null) {
+                        mapItemsExample = new MapItemsExample(InicioActivity.this, mapView,plannedOrders,orders);
+                        mapItemsExample.showAnchoredMapMarkers();
                         // No se produjo ningún error al cargar la escena del mapa
                     } else {
                         Log.d("loadMapScene()", "Loading map failed: mapError: " + mapError.name());

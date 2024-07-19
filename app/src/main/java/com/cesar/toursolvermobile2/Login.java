@@ -179,7 +179,7 @@ public class Login extends AppCompatActivity {
                     ApiResponse apiResponse = response.body();
 
                     List<LastKnownPosition> lastKnownPositions = apiResponse.getLastKnownPosition();
-                    List<OperationalOrderAchievement> achievementsList = apiResponse.getOperationalOrderAchievements();
+                    List<OperationalOrderAchievement> achievementsList = new ArrayList<>();
                     List<OperationalOrderAchievement> achievementsListAgenda = apiResponse.getOperationalOrderAchievements();
                     List<PlannedOrder> plannedOrders = new ArrayList<>();
                     List<PlannedOrder> plannedOrdersAgenda = new ArrayList<>();
@@ -188,6 +188,14 @@ public class Login extends AppCompatActivity {
                     List<Geocode> geocodes = new ArrayList<>();
 
                     Log.d(TAG,"Last Known"+lastKnownPositions.toString());
+
+                    // Filtrar la lista de OperationalOrderAchievement y agregar los logros a achievementsList si el stopId no es "Descanso" o "5"
+                    for (OperationalOrderAchievement achievement : apiResponse.getOperationalOrderAchievements()) {
+                        PlannedOrder plannedOrder = achievement.getPlannedOrder();
+                        if (plannedOrder != null && !"Descanso".equals(plannedOrder.getStopId()) && !"5".equals(plannedOrder.getStopId())) {
+                            achievementsList.add(achievement);
+                        }
+                    }
 
                     for (OperationalOrderAchievement achievementAgenda : achievementsListAgenda){
                         PlannedOrder plannedOrderAgenda = achievementAgenda.getPlannedOrder();
@@ -204,7 +212,7 @@ public class Login extends AppCompatActivity {
                     // Obtener la lista de PlannedOrder de OperationalOrderAchievement y filtrar los elementos con stopId "Llegada"
                     for (OperationalOrderAchievement achievement : achievementsList) {
                         PlannedOrder plannedOrder = achievement.getPlannedOrder();
-                        if (plannedOrder != null && !"Llegada".equals(plannedOrder.getStopId()) && !"Descanso".equals(plannedOrder.getStopId()) ) {
+                        if (plannedOrder != null && !"Llegada".equals(plannedOrder.getStopId()) && !"Descanso".equals(plannedOrder.getStopId()) && !"5".equals(plannedOrder.getStopId()) ) {
                             plannedOrders.add(plannedOrder);
                         }
                     }

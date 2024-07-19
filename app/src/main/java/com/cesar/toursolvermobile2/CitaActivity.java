@@ -40,13 +40,19 @@ import com.cesar.toursolvermobile2.model.Order;
 import com.cesar.toursolvermobile2.model.PlannedOrder;
 import com.cesar.toursolvermobile2.model.ResponsePut;
 import com.cesar.toursolvermobile2.model.updateOrdersOfOperationalPlanning;
+import com.here.sdk.core.Anchor2D;
 import com.here.sdk.core.GeoCoordinates;
+import com.here.sdk.core.GeoOrientationUpdate;
+import com.here.sdk.core.Metadata;
 import com.here.sdk.core.engine.SDKNativeEngine;
 import com.here.sdk.core.engine.SDKOptions;
 import com.here.sdk.core.errors.InstantiationErrorException;
 import com.here.sdk.mapview.LocationIndicator;
 import com.here.sdk.mapview.MapCamera;
 import com.here.sdk.mapview.MapError;
+import com.here.sdk.mapview.MapImage;
+import com.here.sdk.mapview.MapImageFactory;
+import com.here.sdk.mapview.MapMarker;
 import com.here.sdk.mapview.MapMeasure;
 import com.here.sdk.mapview.MapPolyline;
 import com.here.sdk.mapview.MapScene;
@@ -89,6 +95,7 @@ public class CitaActivity extends AppCompatActivity implements PlatformPositioni
     private boolean rutaGenerada,updateData;
     private GeoCoordinates coordenadasDestino;
 
+    private MapItemsExample mapItemsExample;
     private MapScene mapScene;
     private PlatformPositioningProvider positioningProvider;
     private double achievementLat;
@@ -102,6 +109,7 @@ public class CitaActivity extends AppCompatActivity implements PlatformPositioni
     public static final String ACCEPT = "application/json";
     private int validIndex;
     String userName,userEmail,hour;
+    private final List<MapMarker> mapMarkerList = new ArrayList<>();
 
     private List<LastKnownPosition> lastKnownPositions;
     private List<LastKnownPosition> lastKnownPositions2;
@@ -167,7 +175,7 @@ public class CitaActivity extends AppCompatActivity implements PlatformPositioni
         mapCamera = mapView.getCamera();
         mapScene = mapView.getMapScene();
 
-        loadMapScene();
+
 
         // Solicitar permisos de internet y de localización
         requestInternetPermission();
@@ -175,6 +183,8 @@ public class CitaActivity extends AppCompatActivity implements PlatformPositioni
 
         // Initialize positioning provider
         positioningProvider = new PlatformPositioningProvider(this);
+
+        loadMapScene();
 
         button_map = findViewById(R.id.ButtonMap);
         acciones_linear = findViewById(R.id.acciones_linear);
@@ -393,6 +403,8 @@ public class CitaActivity extends AppCompatActivity implements PlatformPositioni
                 acciones_linear_two.setVisibility(View.GONE);
                 acciones_linear.setVisibility(View.GONE);
                 mapView.setVisibility(View.VISIBLE);
+                mapView.onResume();
+                loadMapScene();
                 informacion_relative.setVisibility(View.VISIBLE);
                 zipCode.setVisibility(View.VISIBLE);
                 distance_label.setVisibility(View.VISIBLE);
@@ -928,6 +940,7 @@ public class CitaActivity extends AppCompatActivity implements PlatformPositioni
             Location lastKnownLocation = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
             if (lastKnownLocation != null) {
                 // Si se encuentra una ubicación conocida, mueve la cámara del mapa a esa ubicación
+                //GeoCoordinates userCoordinates = new GeoCoordinates(lastKnownLocation.getLatitude(), lastKnownLocation.getLongitude());
                 GeoCoordinates userCoordinates = new GeoCoordinates(lastKnownLocation.getLatitude(), lastKnownLocation.getLongitude());
                 routingExample = new RoutingExample(CitaActivity.this, mapView,userCoordinates);
                 mapView.getCamera().lookAt(userCoordinates);
@@ -1074,7 +1087,7 @@ public class CitaActivity extends AppCompatActivity implements PlatformPositioni
                         // Actualizar los datos en el intent
                         /*getIntent().putParcelableArrayListExtra("positioning", new ArrayList<>(lastKnownPositions2));
                         getIntent().putParcelableArrayListExtra("plannedOrders", new ArrayList<>(plannedOrders));
-                        getIntent().putParcelableArrayListExtra("orders", new ArrayList<>(orders));
+                        getIntent().putParcelableArrayListExtra("orders", new ArrayList<>(orders));n
                         getIntent().putParcelableArrayListExtra("achievements", new ArrayList<>(achievementsList));
                         getIntent().putParcelableArrayListExtra("geocodes", new ArrayList<>(geocodes));
                         getIntent().putExtra("hora_exacta", hora_global);*/
@@ -1151,7 +1164,7 @@ public class CitaActivity extends AppCompatActivity implements PlatformPositioni
         //updateMapUserLocation(location.getLatitude(), location.getLongitude());
 
         // Agrega un nuevo indicador de ubicación en las nuevas coordenadas
-        GeoCoordinates userCoordinates = new GeoCoordinates(location.getLatitude(), location.getLongitude());
+        //GeoCoordinates userCoordinates = new GeoCoordinates(location.getLatitude(), location.getLongitude());
         //addLocationIndicator(userCoordinates, LocationIndicator.IndicatorStyle.PEDESTRIAN);
     }
 
