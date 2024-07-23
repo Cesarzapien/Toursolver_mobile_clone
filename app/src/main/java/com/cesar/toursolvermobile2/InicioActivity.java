@@ -98,6 +98,7 @@ public class InicioActivity extends DrawerBaseActivity {
     private List<Order> ordersAgenda2;
     private List<OperationalOrderAchievement> achievements2;
     private List<OperationalOrderAchievement> achievementsAgenda2;
+    private List<Geocode> geocodes;
     private List<Geocode> geocodes2 ;
     private Button agenda,sitios;
     private MapView mapView;
@@ -148,7 +149,7 @@ public class InicioActivity extends DrawerBaseActivity {
         List<OperationalOrderAchievement> achievementsAgenda = getIntent().getParcelableArrayListExtra("achievementsAgenda");
         List<PlannedOrder> plannedOrdersAgenda = getIntent().getParcelableArrayListExtra("plannedOrdersAgenda");
         List<Order> ordersAgenda = getIntent().getParcelableArrayListExtra("ordersAgenda");
-        List<Geocode> geocodes = getIntent().getParcelableArrayListExtra("geocodes");
+        geocodes = getIntent().getParcelableArrayListExtra("geocodes");
 
         Log.d(TAG,"achievements Agenda "+achievementsAgenda.toString());
         Log.d(TAG,"plannedOrders Agenda "+plannedOrdersAgenda.toString());
@@ -396,7 +397,10 @@ public class InicioActivity extends DrawerBaseActivity {
                 // Si se encuentra una ubicación conocida, mueve la cámara del mapa a esa ubicación
                 GeoCoordinates userCoordinates = new GeoCoordinates(lastKnownLocation.getLatitude(), lastKnownLocation.getLongitude());
                 //routingExample = new RoutingExample(CitaActivity.this, mapView,userCoordinates);
-                mapView.getCamera().lookAt(userCoordinates);
+                double distanceInMeters = 2100 * 10;
+                MapMeasure mapMeasureZoom = new MapMeasure(MapMeasure.Kind.DISTANCE, distanceInMeters);
+                mapView.getCamera().lookAt(
+                        userCoordinates, mapMeasureZoom);
             }
         }
         // Verifica si es después de las 8:00 p.m. y antes de las 6:00 a.m.

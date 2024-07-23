@@ -33,12 +33,15 @@ import com.cesar.toursolvermobile2.model.PlannedOrder;
 import com.here.sdk.core.Anchor2D;
 import com.here.sdk.core.Color;
 import com.here.sdk.core.GeoCoordinates;
+import com.here.sdk.core.GeoCoordinatesUpdate;
 import com.here.sdk.core.GeoOrientationUpdate;
 import com.here.sdk.core.Location;
 import com.here.sdk.core.Metadata;
 import com.here.sdk.core.Point2D;
 import com.here.sdk.gestures.TapListener;
 import com.here.sdk.mapview.LocationIndicator;
+import com.here.sdk.mapview.MapCameraAnimation;
+import com.here.sdk.mapview.MapCameraAnimationFactory;
 import com.here.sdk.mapview.MapImage;
 import com.here.sdk.mapview.MapImageFactory;
 import com.here.sdk.mapview.MapMarker;
@@ -93,6 +96,12 @@ public class MapItemsExample {
 
                 // Añadir el marcador POI
                 addPOIMapMarker(geoCoordinates);
+
+                // Si es el primer marcador (i == 1), usamos flyTo
+                if (i == 13) {
+                    flyTo(mapView, geoCoordinates);
+                }
+
             }
         }
     }
@@ -330,9 +339,9 @@ public class MapItemsExample {
 
         // Without depth check, 3D models are rendered on top of everything. With depth check enabled,
         // it may be hidden by buildings. In addition:
-        // If a 3D object has its center at the origin of its internal coordinate system, 
+        // If a 3D object has its center at the origin of its internal coordinate system,
         // then parts of it may be rendered below the ground surface (altitude < 0).
-        // Note that the HERE SDK map surface is flat, following a Mercator or Globe projection. 
+        // Note that the HERE SDK map surface is flat, following a Mercator or Globe projection.
         // Therefore, a 3D object becomes visible when the altitude of its location is 0 or higher.
         // By default, without setting a scale factor, 1 unit in 3D coordinate space equals 1 meter.
         double altitude = 18.0;
@@ -476,4 +485,12 @@ public class MapItemsExample {
         builder.setMessage(message);
         builder.show();
     }
+
+    public void flyTo(MapView mapView, GeoCoordinates geoCoordinates) {
+        GeoCoordinatesUpdate geoCoordinatesUpdate = new GeoCoordinatesUpdate(geoCoordinates);
+        double bowFactor = 1;
+        MapCameraAnimation animation = MapCameraAnimationFactory.flyTo(geoCoordinatesUpdate, bowFactor, Duration.ofSeconds(3));
+        mapView.getCamera().startAnimation(animation);
+    }
+
 }

@@ -46,6 +46,7 @@ public class Login extends AppCompatActivity {
     public static final String BASE_URL = "https://api.geoconcept.com/tsapi/";
     public static final String API_KEY = "9e313fb763515473";
     public static final String ACCEPT = "application/json";
+    private String fullName;
 
     TextInputLayout correo, contrasenia;
     CheckBox rememberMeCheckBox;
@@ -124,34 +125,17 @@ public class Login extends AppCompatActivity {
         LoadingAlert loadingAlert = new LoadingAlert(Login.this);
         loadingAlert.startAlertDialog();
 
-        // Crear una instancia de DBHelper
-        DBHelper dbHelper = new DBHelper(Login.this);
-
-        // Verificar las credenciales del usuario
-        if (dbHelper.checkUserCredentials(userLogin, password)) {
-            // Guardar las credenciales si el checkbox está activado
-            if (rememberMeCheckBox.isChecked()) {
-                saveCredentials(userLogin, password);
-            } else {
-                clearCredentials();
-            }
-
-            // Obtener los detalles del usuario
-            User user = dbHelper.getUser(userLogin);
-            if(user != null){
-                String fullName = user.getFirstName() + " " + user.getLastName();
-                // Realizar la llamada a la API
-                callApi(userLogin, loadingAlert, fullName, user.getEmail(), startDate, endDate,hour);
-            }
-
+        // Guardar las credenciales si el checkbox está activado
+        if (rememberMeCheckBox.isChecked()) {
+            saveCredentials(userLogin, password);
         } else {
-            loadingAlert.closeAlertDialog();
-            // Mostrar un Toast si las credenciales son incorrectas
-            Toast.makeText(Login.this, "Correo o contraseña incorrectos", Toast.LENGTH_SHORT).show();
+            clearCredentials();
         }
+
+        callApi(userLogin,loadingAlert,startDate,endDate,hour);
     }
 
-    private void callApi(String userLogin, LoadingAlert loadingAlert, String fullName, String email, String startDate, String endDate,String hour) {
+    private void callApi(String userLogin, LoadingAlert loadingAlert, String startDate, String endDate,String hour) {
         // Crear una instancia de Retrofit
         Retrofit retrofit = new Retrofit.Builder()
                 .baseUrl(BASE_URL)
@@ -177,82 +161,92 @@ public class Login extends AppCompatActivity {
                 loadingAlert.closeAlertDialog();
                 if (response.isSuccessful() && response.body() != null) {
                     ApiResponse apiResponse = response.body();
-
-                    List<LastKnownPosition> lastKnownPositions = apiResponse.getLastKnownPosition();
-                    List<OperationalOrderAchievement> achievementsList = new ArrayList<>();
-                    List<OperationalOrderAchievement> achievementsListAgenda = apiResponse.getOperationalOrderAchievements();
-                    List<PlannedOrder> plannedOrders = new ArrayList<>();
-                    List<PlannedOrder> plannedOrdersAgenda = new ArrayList<>();
-                    List<Order> orders = new ArrayList<>();
-                    List<Order> ordersAgenda = new ArrayList<>();
-                    List<Geocode> geocodes = new ArrayList<>();
-
-                    Log.d(TAG,"Last Known"+lastKnownPositions.toString());
-
-                    // Filtrar la lista de OperationalOrderAchievement y agregar los logros a achievementsList si el stopId no es "Descanso" o "5"
-                    for (OperationalOrderAchievement achievement : apiResponse.getOperationalOrderAchievements()) {
-                        PlannedOrder plannedOrder = achievement.getPlannedOrder();
-                        if (plannedOrder != null && !"Descanso".equals(plannedOrder.getStopId()) && !"5".equals(plannedOrder.getStopId())) {
-                            achievementsList.add(achievement);
+                    if("ERROR".equals(apiResponse.getStatus())){
+                        showErrorAndClearFields();
+                    } else{
+                        // Crear una instancia de DBHelper
+                        DBHelper dbHelper = new DBHelper(Login.this);
+                        // Obtener los detalles del usuario
+                        User user = dbHelper.getUser(userLogin);
+                        if(user != null){
+                            fullName = user.getFirstName() + " " + user.getLastName();
                         }
-                    }
 
-                    for (OperationalOrderAchievement achievementAgenda : achievementsListAgenda){
-                        PlannedOrder plannedOrderAgenda = achievementAgenda.getPlannedOrder();
-                        if (plannedOrderAgenda != null && !"Llegada".equals(plannedOrderAgenda.getStopId())){
-                            plannedOrdersAgenda.add(plannedOrderAgenda);
+                        List<LastKnownPosition> lastKnownPositions = apiResponse.getLastKnownPosition();
+                        List<OperationalOrderAchievement> achievementsList = new ArrayList<>();
+                        List<OperationalOrderAchievement> achievementsListAgenda = apiResponse.getOperationalOrderAchievements();
+                        List<PlannedOrder> plannedOrders = new ArrayList<>();
+                        List<PlannedOrder> plannedOrdersAgenda = new ArrayList<>();
+                        List<Order> orders = new ArrayList<>();
+                        List<Order> ordersAgenda = new ArrayList<>();
+                        List<Geocode> geocodes = new ArrayList<>();
+
+                        Log.d(TAG,"Last Known"+lastKnownPositions.toString());
+                        // Filtrar la lista de OperationalOrderAchievement y agregar los logros a achievementsList si el stopId no es "Descanso" o "5"
+                        for (OperationalOrderAchievement achievement : apiResponse.getOperationalOrderAchievements()) {
+                            PlannedOrder plannedOrder = achievement.getPlannedOrder();
+                            if (plannedOrder != null && !"Descanso".equals(plannedOrder.getStopId()) && !"5".equals(plannedOrder.getStopId())) {
+                                achievementsList.add(achievement);
+                            }
                         }
-                    }
 
-                    for (OperationalOrderAchievement achievementAgenda : achievementsListAgenda) {
-                        Order order = achievementAgenda.getOrder();
-                        ordersAgenda.add(order);
-                    }
-
-                    // Obtener la lista de PlannedOrder de OperationalOrderAchievement y filtrar los elementos con stopId "Llegada"
-                    for (OperationalOrderAchievement achievement : achievementsList) {
-                        PlannedOrder plannedOrder = achievement.getPlannedOrder();
-                        if (plannedOrder != null && !"Llegada".equals(plannedOrder.getStopId()) && !"Descanso".equals(plannedOrder.getStopId()) && !"5".equals(plannedOrder.getStopId()) ) {
-                            plannedOrders.add(plannedOrder);
+                        for (OperationalOrderAchievement achievementAgenda : achievementsListAgenda){
+                            PlannedOrder plannedOrderAgenda = achievementAgenda.getPlannedOrder();
+                            if (plannedOrderAgenda != null && !"Llegada".equals(plannedOrderAgenda.getStopId())){
+                                plannedOrdersAgenda.add(plannedOrderAgenda);
+                            }
                         }
-                    }
 
-                    // Obtener la lista de PlannedOrder de OperationalOrderAchievement y filtrar los elementos con stopId "Llegada"
-                    for (OperationalOrderAchievement achievement : achievementsList) {
-                        Order order = achievement.getOrder();
-                        orders.add(order);
-                    }
-
-                    for(OperationalOrderAchievement achievement : achievementsList) {
-                        Geocode geocode = achievement.getGeocode();
-                        if (geocode != null){
-                            geocodes.add(geocode);
+                        for (OperationalOrderAchievement achievementAgenda : achievementsListAgenda) {
+                            Order order = achievementAgenda.getOrder();
+                            ordersAgenda.add(order);
                         }
+
+                        // Obtener la lista de PlannedOrder de OperationalOrderAchievement y filtrar los elementos con stopId "Llegada"
+                        for (OperationalOrderAchievement achievement : achievementsList) {
+                            PlannedOrder plannedOrder = achievement.getPlannedOrder();
+                            if (plannedOrder != null && !"Llegada".equals(plannedOrder.getStopId()) && !"Descanso".equals(plannedOrder.getStopId()) && !"5".equals(plannedOrder.getStopId()) ) {
+                                plannedOrders.add(plannedOrder);
+                            }
+                        }
+
+                        // Obtener la lista de PlannedOrder de OperationalOrderAchievement y filtrar los elementos con stopId "Llegada"
+                        for (OperationalOrderAchievement achievement : achievementsList) {
+                            Order order = achievement.getOrder();
+                            orders.add(order);
+                        }
+
+                        for(OperationalOrderAchievement achievement : achievementsList) {
+                            Geocode geocode = achievement.getGeocode();
+                            if (geocode != null){
+                                geocodes.add(geocode);
+                            }
+                        }
+
+                        Log.d(TAG,"Orders Login"+orders.toString());
+
+                        Log.d(TAG,"PlannedOrders"+plannedOrders.toString());
+
+                        Log.d(TAG,"Hora"+startDate.toString());
+
+                        Log.d(TAG,"Geocode Login "+geocodes.toString());
+
+
+                        Intent intent = new Intent(Login.this, InicioActivity.class);
+                        intent.putParcelableArrayListExtra("positioning",new ArrayList<>(lastKnownPositions));
+                        intent.putParcelableArrayListExtra("achievements",new ArrayList<>(achievementsList));
+                        intent.putParcelableArrayListExtra("plannedOrders", new ArrayList<>(plannedOrders));
+                        intent.putParcelableArrayListExtra("orders", new ArrayList<>(orders));
+                        intent.putParcelableArrayListExtra("geocodes",new ArrayList<>(geocodes));
+                        intent.putParcelableArrayListExtra("achievementsAgenda",new ArrayList<>(achievementsListAgenda));
+                        intent.putParcelableArrayListExtra("plannedOrdersAgenda",new ArrayList<>(plannedOrdersAgenda));
+                        intent.putParcelableArrayListExtra("ordersAgenda",new ArrayList<>(ordersAgenda));
+                        intent.putExtra("user_name", fullName);
+                        intent.putExtra("user_email", userLogin);
+                        intent.putExtra("hora_exacta", hour);
+                        startActivity(intent);
+                        finish();
                     }
-
-                    Log.d(TAG,"Orders Login"+orders.toString());
-
-                    Log.d(TAG,"PlannedOrders"+plannedOrders.toString());
-
-                    Log.d(TAG,"Hora"+startDate.toString());
-
-                    Log.d(TAG,"Geocode Login "+geocodes.toString());
-
-
-                    Intent intent = new Intent(Login.this, InicioActivity.class);
-                    intent.putParcelableArrayListExtra("positioning",new ArrayList<>(lastKnownPositions));
-                    intent.putParcelableArrayListExtra("achievements",new ArrayList<>(achievementsList));
-                    intent.putParcelableArrayListExtra("plannedOrders", new ArrayList<>(plannedOrders));
-                    intent.putParcelableArrayListExtra("orders", new ArrayList<>(orders));
-                    intent.putParcelableArrayListExtra("geocodes",new ArrayList<>(geocodes));
-                    intent.putParcelableArrayListExtra("achievementsAgenda",new ArrayList<>(achievementsListAgenda));
-                    intent.putParcelableArrayListExtra("plannedOrdersAgenda",new ArrayList<>(plannedOrdersAgenda));
-                    intent.putParcelableArrayListExtra("ordersAgenda",new ArrayList<>(ordersAgenda));
-                    intent.putExtra("user_name", fullName);
-                    intent.putExtra("user_email", email);
-                    intent.putExtra("hora_exacta", hour);
-                    startActivity(intent);
-                    finish();
                 } else {
                     Log.e(TAG, "Error en la respuesta de la API: " + response.errorBody());
                     Toast.makeText(Login.this, "Error en la respuesta de la API", Toast.LENGTH_SHORT).show();
@@ -266,6 +260,13 @@ public class Login extends AppCompatActivity {
                 Toast.makeText(Login.this, "Error en la llamada a la API", Toast.LENGTH_SHORT).show();
             }
         });
+    }
+
+    private void showErrorAndClearFields() {
+        Toast.makeText(Login.this, "Correo o contraseña incorrectos", Toast.LENGTH_SHORT).show();
+        correo.getEditText().setText("");
+        contrasenia.getEditText().setText("");
+        correo.getEditText().requestFocus();
     }
 
     private void saveCredentials(String email, String password) {

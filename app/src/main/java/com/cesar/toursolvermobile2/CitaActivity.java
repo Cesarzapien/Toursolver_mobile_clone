@@ -354,7 +354,7 @@ public class CitaActivity extends AppCompatActivity implements PlatformPositioni
             @Override
             public void onClick(View v) {
 
-                if (ContextCompat.checkSelfPermission(CitaActivity.this, android.Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+                /*if (ContextCompat.checkSelfPermission(CitaActivity.this, android.Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
                     LocationManager locationManager = (LocationManager) CitaActivity.this.getSystemService(Context.LOCATION_SERVICE);
                     Location lastKnownLocation = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
                     if (lastKnownLocation != null) {
@@ -367,7 +367,7 @@ public class CitaActivity extends AppCompatActivity implements PlatformPositioni
                     }
                 } else {
                     Toast.makeText(CitaActivity.this, "Permiso de ubicación no concedido", Toast.LENGTH_SHORT).show();
-                }
+                }*/
 
             }
         });
@@ -940,10 +940,12 @@ public class CitaActivity extends AppCompatActivity implements PlatformPositioni
             Location lastKnownLocation = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
             if (lastKnownLocation != null) {
                 // Si se encuentra una ubicación conocida, mueve la cámara del mapa a esa ubicación
-                //GeoCoordinates userCoordinates = new GeoCoordinates(lastKnownLocation.getLatitude(), lastKnownLocation.getLongitude());
                 GeoCoordinates userCoordinates = new GeoCoordinates(lastKnownLocation.getLatitude(), lastKnownLocation.getLongitude());
-                routingExample = new RoutingExample(CitaActivity.this, mapView,userCoordinates);
-                mapView.getCamera().lookAt(userCoordinates);
+                //routingExample = new RoutingExample(CitaActivity.this, mapView,userCoordinates);
+                double distanceInMeters = 2100 * 10;
+                MapMeasure mapMeasureZoom = new MapMeasure(MapMeasure.Kind.DISTANCE, distanceInMeters);
+                mapView.getCamera().lookAt(
+                        userCoordinates, mapMeasureZoom);
             }
         }
         // Verifica si es después de las 8:00 p.m. y antes de las 6:00 a.m.
@@ -955,6 +957,8 @@ public class CitaActivity extends AppCompatActivity implements PlatformPositioni
                 @Override
                 public void onLoadScene(@Nullable MapError mapError) {
                     if (mapError == null) {
+                        //mapItemsExample = new MapItemsExample(InicioActivity.this, mapView,plannedOrders,orders);
+                        //mapItemsExample.showAnchoredMapMarkers();
                         // No se produjo ningún error al cargar la escena del mapa
                     } else {
                         Log.d("loadMapScene()", "Loading map failed: mapError: " + mapError.name());
@@ -967,6 +971,8 @@ public class CitaActivity extends AppCompatActivity implements PlatformPositioni
                 @Override
                 public void onLoadScene(@Nullable MapError mapError) {
                     if (mapError == null) {
+                        //mapItemsExample = new MapItemsExample(InicioActivity.this, mapView,plannedOrders,orders);
+                        //mapItemsExample.showAnchoredMapMarkers();
                         // No se produjo ningún error al cargar la escena del mapa
                     } else {
                         Log.d("loadMapScene()", "Loading map failed: mapError: " + mapError.name());
