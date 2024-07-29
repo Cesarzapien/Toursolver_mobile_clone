@@ -712,10 +712,12 @@ public class InicioActivity extends DrawerBaseActivity {
 
     @Override
     protected void onDestroy() {
-        mapView.onDestroy();
-        disposeHERESDK();
         super.onDestroy();
+        if (mapView != null) {
+            mapView.onDestroy();
+        }
     }
+
 
     @Override
     protected void onSaveInstanceState(@NonNull Bundle outState) {
