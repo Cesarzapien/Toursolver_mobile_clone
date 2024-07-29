@@ -79,7 +79,7 @@ public class RoutingExample {
         this.context = context;
         this.mapView = mapView;
         MapCamera camera = mapView.getCamera();
-        double distanceInMeters = 1000 * 10;
+        double distanceInMeters = 5000 * 10;
         MapMeasure mapMeasureZoom = new MapMeasure(MapMeasure.Kind.DISTANCE, distanceInMeters);
         camera.lookAt(new GeoCoordinates(21.099163,-101.5774649), mapMeasureZoom);
 
@@ -238,8 +238,8 @@ public class RoutingExample {
                     route.getSections().get(route.getSections().size() - 1).getArrivalPlace().mapMatchedCoordinates;
 
             // Draw a circle to indicate starting point and destination.
-            addCircleMapMarker(startPoint, R.drawable.marcador_azul);
-            addCircleMapMarker(destination, R.drawable.marcador_rojo);
+            addCircleMapMarker(startPoint, R.drawable.marcador_accepted);
+            addCircleMapMarker(destination, R.drawable.marcador_accepted);
 
             // Log maneuver instructions per route section.
         List<Section> sections = route.getSections();
@@ -387,10 +387,14 @@ public class RoutingExample {
     }
 
     private void addCircleMapMarker(GeoCoordinates geoCoordinates, int resourceId) {
-        MapImage mapImage = MapImageFactory.fromResource(context.getResources(), resourceId);
-        MapMarker mapMarker = new MapMarker(geoCoordinates, mapImage);
-        mapView.getMapScene().addMapMarker(mapMarker);
-        mapMarkerList.add(mapMarker);
+        try {
+            MapImage mapImage = MapImageFactory.fromResource(context.getResources(), resourceId);
+            MapMarker mapMarker = new MapMarker(geoCoordinates, mapImage);
+            mapView.getMapScene().addMapMarker(mapMarker);
+            mapMarkerList.add(mapMarker);
+        } catch (Exception e) {
+            Log.e("Prueba","Error al crear el punto"+e.getMessage()+" Donde "+e.getStackTrace());
+        }
     }
 
     private void showDialog(String title, String message) {
