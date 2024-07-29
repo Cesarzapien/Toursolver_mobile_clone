@@ -239,9 +239,9 @@ public class mapHelper{
             Location lastKnownLocation = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
             if (lastKnownLocation != null) {
                 GeoCoordinates coordenadasInicio = new GeoCoordinates(lastKnownLocation.getLatitude(), lastKnownLocation.getLongitude());
-                RoutingExample routingExample = new RoutingExample(activity, mapView, coordenadasInicio);
-                routingExample.clearRoute();
-                routingExample.addRoute(coordenadasInicio, coordenadasDestino);
+                //RoutingExample routingExample = new RoutingExample(activity, mapView);
+                //routingExample.clearRoute();
+                //routingExample.addRoute(coordenadasInicio, coordenadasDestino);
             } else {
                 Toast.makeText(activity, "No se pudo obtener la ubicación actual", Toast.LENGTH_SHORT).show();
             }

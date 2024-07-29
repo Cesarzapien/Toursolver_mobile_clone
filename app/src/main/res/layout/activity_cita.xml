@@ -405,7 +405,7 @@
 
 
             <com.here.sdk.mapview.MapView
-                android:id="@+id/map_view"
+                android:id="@+id/map_view2"
                 android:layout_width="match_parent"
                 android:layout_height="200dp">
             </com.here.sdk.mapview.MapView>

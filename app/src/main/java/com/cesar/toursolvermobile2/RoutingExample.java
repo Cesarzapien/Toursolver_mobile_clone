@@ -20,23 +20,15 @@ package com.cesar.toursolvermobile2;
  */
 
 import android.content.Context;
-import android.graphics.drawable.ColorDrawable;
 import android.util.Log;
-import android.view.LayoutInflater;
-import android.view.View;
-import android.view.ViewGroup;
-import android.view.Window;
-import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
-import androidx.core.content.ContextCompat;
 
-import com.cesar.toursolvermobile2.R;
 import com.here.sdk.core.Color;
 import com.here.sdk.core.GeoCoordinates;
 import com.here.sdk.core.GeoPolyline;
+import com.here.sdk.core.Point2D;
 import com.here.sdk.core.errors.InstantiationErrorException;
 import com.here.sdk.mapview.LineCap;
 import com.here.sdk.mapview.MapCamera;
@@ -62,9 +54,7 @@ import com.here.sdk.routing.Span;
 import com.here.sdk.routing.Toll;
 import com.here.sdk.routing.TollFare;
 import com.here.sdk.routing.TrafficSpeed;
-import com.here.sdk.routing.TruckOptions;
 import com.here.sdk.routing.Waypoint;
-import com.here.sdk.transport.TruckSpecifications;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -74,54 +64,45 @@ import java.util.List;
 import java.util.Locale;
 
 public class RoutingExample {
+
     private static final String TAG = RoutingExample.class.getName();
+
     private final Context context;
-    private final MapView mapView;
+    private MapView mapView;
     private final List<MapMarker> mapMarkerList = new ArrayList<>();
     private final List<MapPolyline> mapPolylines = new ArrayList<>();
-    private static RoutingEngine routingEngine;
-    private GeoCoordinates startGeoCoordinates, destinationGeoCoordinates;
+    private RoutingEngine routingEngine;
+    private GeoCoordinates startGeoCoordinates;
+    private GeoCoordinates destinationGeoCoordinates;
 
-    public RoutingExample(Context context, MapView mapView, GeoCoordinates coordendas) {
+    public RoutingExample(Context context, MapView mapView) {
         this.context = context;
         this.mapView = mapView;
         MapCamera camera = mapView.getCamera();
         double distanceInMeters = 1000 * 10;
         MapMeasure mapMeasureZoom = new MapMeasure(MapMeasure.Kind.DISTANCE, distanceInMeters);
-        camera.lookAt(coordendas, mapMeasureZoom);
+        camera.lookAt(new GeoCoordinates(21.099163,-101.5774649), mapMeasureZoom);
 
-        if (routingEngine == null) {
-            try {
-                routingEngine = new RoutingEngine();
-            } catch (InstantiationErrorException e) {
-                throw new RuntimeException("Initialization of RoutingEngine failed: " + e.error.name());
-            }
+        try {
+            routingEngine = new RoutingEngine();
+            addRoute();
+        } catch (InstantiationErrorException e) {
+            Log.e("Prueba", "Initialization of RoutingEngine failed: " + e.error.name());
+            //throw new RuntimeException("Initialization of RoutingEngine failed: " + e.error.name());
         }
     }
 
-    public void addRoute(@Nullable GeoCoordinates coordenadas_iniciales, @Nullable GeoCoordinates coordenadas_destino) {
-        clearRoute();
-        clearMap();
-        if (coordenadas_iniciales == null || coordenadas_destino == null) {
-            return;
-        }
-        startGeoCoordinates = coordenadas_iniciales;
-        destinationGeoCoordinates = coordenadas_destino;
+    public void addRoute() {
+        startGeoCoordinates = new GeoCoordinates(21.099163,-101.5774649);
+        destinationGeoCoordinates = new GeoCoordinates(21.1317858,-101.6808085);
         Waypoint startWaypoint = new Waypoint(startGeoCoordinates);
         Waypoint destinationWaypoint = new Waypoint(destinationGeoCoordinates);
 
-        List<Waypoint> waypoints = new ArrayList<>(Arrays.asList(startWaypoint, destinationWaypoint));
+        List<Waypoint> waypoints =
+                new ArrayList<>(Arrays.asList(startWaypoint, destinationWaypoint));
 
         CarOptions carOptions = new CarOptions();
         carOptions.routeOptions.enableTolls = true;
-
-        if (routingEngine == null) {
-            try {
-                routingEngine = new RoutingEngine();
-            } catch (InstantiationErrorException e) {
-                throw new RuntimeException("Initialization of RoutingEngine failed: " + e.error.name());
-            }
-        }
 
         routingEngine.calculateRoute(
                 waypoints,
@@ -131,20 +112,20 @@ public class RoutingExample {
                     public void onRouteCalculated(@Nullable RoutingError routingError, @Nullable List<Route> routes) {
                         if (routingError == null) {
                             Route route = routes.get(0);
-                            showTrafficOnRoute(route);
                             showRouteDetails(route);
                             showRouteOnMap(route);
-                            logRouteSectionDetails(route);
+                            /*logRouteSectionDetails(route);
                             logRouteViolations(route);
-                            logTollDetails(route);
+                            logTollDetails(route);*/
                         } else {
                             showDialog("Error while calculating a route:", routingError.toString());
                         }
                     }
-                }
-        );
+                });
     }
 
+    // A route may contain several warnings, for example, when a certain route option could not be fulfilled.
+    // An implementation may decide to reject a route if one or more violations are detected.
     private void logRouteViolations(Route route) {
         for (Section section : route.getSections()) {
             for (SectionNotice notice : section.getSectionNotices()) {
@@ -171,6 +152,8 @@ public class RoutingExample {
 
     private void logTollDetails(Route route) {
         for (Section section : route.getSections()) {
+            // The spans that make up the polyline along which tolls are required or
+            // where toll booths are located.
             List<Span> spans = section.getSpans();
             List<Toll> tolls = section.getTolls();
             if (!tolls.isEmpty()) {
@@ -182,6 +165,9 @@ public class RoutingExample {
                 Log.d(TAG, "Toll country code (ISO-3166-1 alpha-3): " + toll.countryCode);
                 Log.d(TAG, "Toll fare information: ");
                 for (TollFare tollFare : toll.fares) {
+                    // A list of possible toll fares which may depend on time of day, payment method and
+                    // vehicle characteristics. For further details please consult the local
+                    // authorities.
                     Log.d(TAG, "Toll price: " + tollFare.price + " " + tollFare.currency);
                     for (PaymentMethod paymentMethod : tollFare.paymentMethods) {
                         Log.d(TAG, "Accepted payment methods for this price: " + paymentMethod.name());
@@ -192,66 +178,81 @@ public class RoutingExample {
     }
 
     private void showRouteDetails(Route route) {
-        AlertDialog.Builder builder = new AlertDialog.Builder(context, R.style.CustomDialogTheme);
-        View dialogView = LayoutInflater.from(context).inflate(R.layout.dialog_route_details, null);
-
-        TextView dialogTitle = dialogView.findViewById(R.id.dialog_title);
-        TextView dialogDuration = dialogView.findViewById(R.id.dialog_duration);
-        TextView dialogTrafficDelay = dialogView.findViewById(R.id.dialog_traffic_delay);
-        TextView dialogDistance = dialogView.findViewById(R.id.dialog_distance);
-
+        // estimatedTravelTimeInSeconds includes traffic delay.
         long estimatedTravelTimeInSeconds = route.getDuration().getSeconds();
         long estimatedTrafficDelayInSeconds = route.getTrafficDelay().getSeconds();
         int lengthInMeters = route.getLengthInMeters();
 
-        String durationString = formatDuration(estimatedTravelTimeInSeconds);
-        String trafficDelayString = formatDuration(estimatedTrafficDelayInSeconds);
-        String distanceString = formatDistance(lengthInMeters);
+        String routeDetails = "Travel Time: " + formatTime(estimatedTravelTimeInSeconds)
+                + ", traffic delay: " + formatTime(estimatedTrafficDelayInSeconds)
+                + ", Length: " + formatLength(lengthInMeters);
 
-        dialogTitle.setText("Detalles de la ruta");
-        dialogDuration.setText("Trayecto: " + durationString);
-        dialogTrafficDelay.setText("Retraso por tráfico: " + trafficDelayString);
-        dialogDistance.setText("Distancia: " + distanceString);
+        showDialog("Route Details", routeDetails);
+    }
 
-        builder.setView(dialogView);
-        AlertDialog dialog = builder.create();
-        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
-        if (dialog.getWindow() != null) {
-            dialog.getWindow().setBackgroundDrawable(new ColorDrawable(ContextCompat.getColor(context, R.color.TRANSPARENT)));
-            int maxWidth = (int) (context.getResources().getDisplayMetrics().widthPixels * 0.5);
-            dialog.getWindow().setLayout(maxWidth, ViewGroup.LayoutParams.WRAP_CONTENT);
-        }
-        dialog.show();
+    private String formatTime(long sec) {
+        int hours = (int) (sec / 3600);
+        int minutes = (int) ((sec % 3600) / 60);
+
+        return String.format(Locale.getDefault(), "%02d:%02d", hours, minutes);
+    }
+
+    private String formatLength(int meters) {
+        int kilometers = meters / 1000;
+        int remainingMeters = meters % 1000;
+
+        return String.format(Locale.getDefault(), "%02d.%02d km", kilometers, remainingMeters);
     }
 
     private void showRouteOnMap(Route route) {
-        clearMap();
-
-        GeoPolyline routeGeoPolyline = route.getGeometry();
-        float widthInPixels = 20;
-        Color polylineColor = new Color(0, (float) 0.56, (float) 0.54, (float) 0.63);
-        MapPolyline routeMapPolyline = null;
+        // Optionally, clear any previous route.
         try {
-            routeMapPolyline = new MapPolyline(routeGeoPolyline, new MapPolyline.SolidRepresentation(
-                    new MapMeasureDependentRenderSize(RenderSize.Unit.PIXELS, widthInPixels),
-                    polylineColor,
-                    LineCap.ROUND));
-        } catch (MapPolyline.Representation.InstantiationException e) {
-            Log.e("MapPolyline Representation Exception:", e.error.name());
-        } catch (MapMeasureDependentRenderSize.InstantiationException e) {
-            Log.e("MapMeasureDependentRenderSize Exception:", e.error.name());
-        }
-        CitaActivity mainActivity = (CitaActivity) context;
-        mainActivity.rutaActual = routeMapPolyline;
+            clearMap();
 
-        mapView.getMapScene().addMapPolyline(routeMapPolyline);
-        mapPolylines.add(routeMapPolyline);
+            Log.d("Prueba","Paso 1");
+            // Show route as polyline.
+            GeoPolyline routeGeoPolyline = route.getGeometry();
+            float widthInPixels = 20;
+            Color polylineColor = new Color(0, (float) 0.56, (float) 0.54, (float) 0.63);
+            MapPolyline routeMapPolyline = null;
 
-        showTrafficOnRoute(route);
+            Log.d("Prueba","Paso 2");
 
-        List<Section> sections = route.getSections();
+            try {
+                routeMapPolyline = new MapPolyline(routeGeoPolyline, new MapPolyline.SolidRepresentation(
+                        new MapMeasureDependentRenderSize(RenderSize.Unit.PIXELS, widthInPixels),
+                        polylineColor,
+                        LineCap.ROUND));
+            } catch (MapPolyline.Representation.InstantiationException e) {
+                Log.e("MapPolyline Representation Exception:", e.error.name());
+            } catch (MapMeasureDependentRenderSize.InstantiationException e) {
+                Log.e("MapMeasureDependentRenderSize Exception:", e.error.name());
+            }
+
+            mapView.getMapScene().addMapPolyline(routeMapPolyline);
+            mapPolylines.add(routeMapPolyline);
+            Log.d("Prueba","Paso 3");
+
+            // Optionally, render traffic on route.
+            //showTrafficOnRoute(route);
+
+            GeoCoordinates startPoint =
+                    route.getSections().get(0).getDeparturePlace().mapMatchedCoordinates;
+            GeoCoordinates destination =
+                    route.getSections().get(route.getSections().size() - 1).getArrivalPlace().mapMatchedCoordinates;
+
+            Log.d("Prueba","Paso 4");
+            // Draw a circle to indicate starting point and destination.
+            //addCircleMapMarker(startPoint, R.drawable.circular_background);
+            //addCircleMapMarker(destination, R.drawable.circle);
+
+            // Log maneuver instructions per route section.
+        /*List<Section> sections = route.getSections();
         for (Section section : sections) {
             logManeuverInstructions(section);
+        }*/
+        } catch (Exception e) {
+            Log.e("Prueba",e.toString());
         }
     }
 
@@ -268,6 +269,40 @@ public class RoutingExample {
         }
     }
 
+    public void addWaypoints() {
+        if (startGeoCoordinates == null || destinationGeoCoordinates == null) {
+            showDialog("Error", "Please add a route first.");
+            return;
+        }
+
+        Waypoint waypoint1 = new Waypoint(createRandomGeoCoordinatesAroundMapCenter());
+        Waypoint waypoint2 = new Waypoint(createRandomGeoCoordinatesAroundMapCenter());
+        List<Waypoint> waypoints = new ArrayList<>(Arrays.asList(new Waypoint(startGeoCoordinates),
+                waypoint1, waypoint2, new Waypoint(destinationGeoCoordinates)));
+
+        routingEngine.calculateRoute(
+                waypoints,
+                new CarOptions(),
+                new CalculateRouteCallback() {
+                    @Override
+                    public void onRouteCalculated(@Nullable RoutingError routingError, @Nullable List<Route> routes) {
+                        if (routingError == null) {
+                            Route route = routes.get(0);
+                            showRouteDetails(route);
+                            showRouteOnMap(route);
+                            logRouteSectionDetails(route);
+                            logRouteViolations(route);
+
+                            // Draw a circle to indicate the location of the waypoints.
+                            addCircleMapMarker(waypoint1.coordinates, R.drawable.red_dot);
+                            addCircleMapMarker(waypoint2.coordinates, R.drawable.red_dot);
+                        } else {
+                            showDialog("Error while calculating a route:", routingError.toString());
+                        }
+                    }
+                });
+    }
+
     public void clearMap() {
         clearWaypointMapMarker();
         clearRoute();
@@ -280,25 +315,26 @@ public class RoutingExample {
         mapMarkerList.clear();
     }
 
-    public void clearRoute() {
+    private void clearRoute() {
         for (MapPolyline mapPolyline : mapPolylines) {
             mapView.getMapScene().removeMapPolyline(mapPolyline);
         }
         mapPolylines.clear();
-        clearWaypointMapMarker();
-        clearPolylines();
     }
 
+    // This renders the traffic jam factor on top of the route as multiple MapPolylines per span.
     private void showTrafficOnRoute(Route route) {
         if (route.getLengthInMeters() / 1000 > 5000) {
             Log.d(TAG, "Skip showing traffic-on-route for longer routes.");
             return;
         }
+
         for (Section section : route.getSections()) {
             for (Span span : section.getSpans()) {
                 TrafficSpeed trafficSpeed = span.getTrafficSpeed();
                 Color lineColor = getTrafficColor(trafficSpeed.jamFactor);
                 if (lineColor == null) {
+                    // We skip rendering low traffic.
                     continue;
                 }
                 float widthInPixels = 10;
@@ -315,51 +351,58 @@ public class RoutingExample {
                 }
 
                 mapView.getMapScene().addMapPolyline(trafficSpanMapPolyline);
-                CitaActivity mainActivity = (CitaActivity) context;
-                mainActivity.mapPolylinesTrafico.add(trafficSpanMapPolyline);
                 mapPolylines.add(trafficSpanMapPolyline);
             }
         }
     }
 
+    // Define a traffic color scheme based on the route's jam factor.
+    // 0 <= jamFactor < 4: No or light traffic.
+    // 4 <= jamFactor < 8: Moderate or slow traffic.
+    // 8 <= jamFactor < 10: Severe traffic.
+    // jamFactor = 10: No traffic, ie. the road is blocked.
+    // Returns null in case of no or light traffic.
     @Nullable
     private Color getTrafficColor(Double jamFactor) {
         if (jamFactor == null || jamFactor < 4) {
             return null;
         } else if (jamFactor >= 4 && jamFactor < 8) {
-            return Color.valueOf(1, 1, 0, 0.63f);
+            return Color.valueOf(1, 1, 0, 0.63f); // Yellow
         } else if (jamFactor >= 8 && jamFactor < 10) {
-            return Color.valueOf(1, 0, 0, 0.63f);
+            return Color.valueOf(1, 0, 0, 0.63f); // Red
         }
-        return Color.valueOf(0, 0, 0, 0.63f);
+        return Color.valueOf(0, 0, 0, 0.63f); // Black
     }
 
-    private String formatDuration(long seconds) {
-        long hours = seconds / 3600;
-        long minutes = (seconds % 3600) / 60;
-        return String.format(Locale.getDefault(), "%d horas %02d minutos", hours, minutes);
+    private GeoCoordinates createRandomGeoCoordinatesAroundMapCenter() {
+        GeoCoordinates centerGeoCoordinates = mapView.viewToGeoCoordinates(
+                new Point2D(mapView.getWidth() / 2, mapView.getHeight() / 2));
+        if (centerGeoCoordinates == null) {
+            // Should never happen for center coordinates.
+            throw new RuntimeException("CenterGeoCoordinates are null");
+        }
+        double lat = centerGeoCoordinates.latitude;
+        double lon = centerGeoCoordinates.longitude;
+        return new GeoCoordinates(getRandom(lat - 0.02, lat + 0.02),
+                getRandom(lon - 0.02, lon + 0.02));
     }
 
-    private String formatDistance(int meters) {
-        int kilometers = meters / 1000;
-        int remainingMeters = meters % 1000;
-        return String.format(Locale.getDefault(), "%d.%03d km", kilometers, remainingMeters);
+    private double getRandom(double min, double max) {
+        return min + Math.random() * (max - min);
+    }
+
+    private void addCircleMapMarker(GeoCoordinates geoCoordinates, int resourceId) {
+        MapImage mapImage = MapImageFactory.fromResource(context.getResources(), resourceId);
+        MapMarker mapMarker = new MapMarker(geoCoordinates, mapImage);
+        mapView.getMapScene().addMapMarker(mapMarker);
+        mapMarkerList.add(mapMarker);
     }
 
     private void showDialog(String title, String message) {
-        AlertDialog.Builder builder = new AlertDialog.Builder(context);
-        builder.setTitle(title)
-                .setMessage(message)
-                .setCancelable(true)
-                .setPositiveButton("Aceptar", null);
-        AlertDialog dialog = builder.create();
-        dialog.show();
-    }
-
-    private void clearPolylines() {
-        for (MapPolyline mapPolyline : mapPolylines) {
-            mapView.getMapScene().removeMapPolyline(mapPolyline);
-        }
-        mapPolylines.clear();
+        AlertDialog.Builder builder =
+                new AlertDialog.Builder(context);
+        builder.setTitle(title);
+        builder.setMessage(message);
+        builder.show();
     }
 }

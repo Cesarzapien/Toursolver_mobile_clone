@@ -83,8 +83,8 @@ public class Login extends AppCompatActivity {
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'00:00:00", Locale.getDefault());
         SimpleDateFormat sdf2 = new SimpleDateFormat("HH:mm",Locale.getDefault());
         String hour = sdf2.format(currentDate);
-        String startDate = sdf.format(currentDate);
-        String endDate = sdf.format(tomorrowDate);
+        String startDate = "2024-07-25T00:00:00";
+        String endDate = "2024-07-26T00:00:00";
 
         // Cargar credenciales guardadas si existen
         loadCredentials();

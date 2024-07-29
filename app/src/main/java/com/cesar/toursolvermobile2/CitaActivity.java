@@ -91,7 +91,7 @@ public class CitaActivity extends AppCompatActivity implements PlatformPositioni
     private View line_one,line_two,line_three;
     private EditText salida_input,comentarios_input;
     private mapHelper mMapHelper;
-    private MapView mapView;
+    public MapView mapView;
     private boolean rutaGenerada,updateData;
     private GeoCoordinates coordenadasDestino;
 
@@ -163,15 +163,16 @@ public class CitaActivity extends AppCompatActivity implements PlatformPositioni
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
-        // Usually, you need to initialize the HERE SDK only once during the lifetime of an application.
         initializeHERESDK();
-
         setContentView(R.layout.activity_cita);
 
-        // Creamos la instancia del mapa
-        mapView = findViewById(R.id.map_view);
+        // Usually, you need to initialize the HERE SDK only once during the lifetime of an application.
+
+
+        // Get a MapView instance from layout.
+        mapView = findViewById(R.id.map_view2);
         mapView.onCreate(savedInstanceState);
+
         mapCamera = mapView.getCamera();
         mapScene = mapView.getMapScene();
 
@@ -354,20 +355,7 @@ public class CitaActivity extends AppCompatActivity implements PlatformPositioni
             @Override
             public void onClick(View v) {
 
-                /*if (ContextCompat.checkSelfPermission(CitaActivity.this, android.Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-                    LocationManager locationManager = (LocationManager) CitaActivity.this.getSystemService(Context.LOCATION_SERVICE);
-                    Location lastKnownLocation = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
-                    if (lastKnownLocation != null) {
-                        GeoCoordinates coordenadasInicio = new GeoCoordinates(lastKnownLocation.getLatitude(), lastKnownLocation.getLongitude());
-                        Log.d(TAG,"Coord inicio "+coordenadasInicio.toString());
-                        Log.d(TAG,"Coord Destino "+coordenadasDestino.toString());
-                        routingExample.addRoute(coordenadasInicio, coordenadasDestino);
-                    } else {
-                        Toast.makeText(CitaActivity.this, "No se pudo obtener la ubicación actual", Toast.LENGTH_SHORT).show();
-                    }
-                } else {
-                    Toast.makeText(CitaActivity.this, "Permiso de ubicación no concedido", Toast.LENGTH_SHORT).show();
-                }*/
+                routingExample.addRoute();
 
             }
         });
@@ -925,11 +913,12 @@ public class CitaActivity extends AppCompatActivity implements PlatformPositioni
         String accessKeySecret = "l2XlfnoRv8eY4X40KfGOB6s5u820HsCARXLvLMBiM-wmDLcF6dLGWNLNR-Y1-cQ7Cr_PhrZIz1Aurjm245tEXg";
         SDKOptions options = new SDKOptions(accessKeyID, accessKeySecret);
         try {
-            Context context = this;
+            Context context = CitaActivity.this;
             SDKNativeEngine.makeSharedInstance(context, options);
         } catch (InstantiationErrorException e) {
             throw new RuntimeException("Initialization of HERE SDK failed: " + e.error.name());
         }
+
     }
 
     private void loadMapScene() {
@@ -940,12 +929,12 @@ public class CitaActivity extends AppCompatActivity implements PlatformPositioni
             Location lastKnownLocation = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
             if (lastKnownLocation != null) {
                 // Si se encuentra una ubicación conocida, mueve la cámara del mapa a esa ubicación
-                GeoCoordinates userCoordinates = new GeoCoordinates(lastKnownLocation.getLatitude(), lastKnownLocation.getLongitude());
+                /*GeoCoordinates userCoordinates = new GeoCoordinates(lastKnownLocation.getLatitude(), lastKnownLocation.getLongitude());
                 //routingExample = new RoutingExample(CitaActivity.this, mapView,userCoordinates);
                 double distanceInMeters = 2100 * 10;
                 MapMeasure mapMeasureZoom = new MapMeasure(MapMeasure.Kind.DISTANCE, distanceInMeters);
                 mapView.getCamera().lookAt(
-                        userCoordinates, mapMeasureZoom);
+                        userCoordinates, mapMeasureZoom);*/
             }
         }
         // Verifica si es después de las 8:00 p.m. y antes de las 6:00 a.m.
@@ -957,11 +946,9 @@ public class CitaActivity extends AppCompatActivity implements PlatformPositioni
                 @Override
                 public void onLoadScene(@Nullable MapError mapError) {
                     if (mapError == null) {
-                        //mapItemsExample = new MapItemsExample(InicioActivity.this, mapView,plannedOrders,orders);
-                        //mapItemsExample.showAnchoredMapMarkers();
-                        // No se produjo ningún error al cargar la escena del mapa
+
                     } else {
-                        Log.d("loadMapScene()", "Loading map failed: mapError: " + mapError.name());
+                        Log.d(TAG, "Loading map failed: mapErrorCode: " + mapError.name());
                     }
                 }
             });
@@ -971,15 +958,14 @@ public class CitaActivity extends AppCompatActivity implements PlatformPositioni
                 @Override
                 public void onLoadScene(@Nullable MapError mapError) {
                     if (mapError == null) {
-                        //mapItemsExample = new MapItemsExample(InicioActivity.this, mapView,plannedOrders,orders);
-                        //mapItemsExample.showAnchoredMapMarkers();
-                        // No se produjo ningún error al cargar la escena del mapa
+
                     } else {
-                        Log.d("loadMapScene()", "Loading map failed: mapError: " + mapError.name());
+                        Log.d(TAG, "Loading map failed: mapErrorCode: " + mapError.name());
                     }
                 }
             });
         }
+        routingExample = new RoutingExample(CitaActivity.this, mapView);
     }
 
     private void disposeHERESDK() {
