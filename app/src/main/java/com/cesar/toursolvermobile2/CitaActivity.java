@@ -1190,9 +1190,10 @@ public class CitaActivity extends AppCompatActivity implements PlatformPositioni
 
     @Override
     protected void onDestroy() {
-        mapView.onDestroy();
-        disposeHERESDK();
         super.onDestroy();
+        if (mapView != null) {
+            mapView.onDestroy();
+        }
     }
 
     @Override
