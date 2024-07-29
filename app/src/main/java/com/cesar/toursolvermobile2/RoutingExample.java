@@ -114,9 +114,9 @@ public class RoutingExample {
                             Route route = routes.get(0);
                             showRouteDetails(route);
                             showRouteOnMap(route);
-                            /*logRouteSectionDetails(route);
+                            logRouteSectionDetails(route);
                             logRouteViolations(route);
-                            logTollDetails(route);*/
+                            logTollDetails(route);
                         } else {
                             showDialog("Error while calculating a route:", routingError.toString());
                         }
@@ -209,14 +209,11 @@ public class RoutingExample {
         try {
             clearMap();
 
-            Log.d("Prueba","Paso 1");
             // Show route as polyline.
             GeoPolyline routeGeoPolyline = route.getGeometry();
             float widthInPixels = 20;
             Color polylineColor = new Color(0, (float) 0.56, (float) 0.54, (float) 0.63);
             MapPolyline routeMapPolyline = null;
-
-            Log.d("Prueba","Paso 2");
 
             try {
                 routeMapPolyline = new MapPolyline(routeGeoPolyline, new MapPolyline.SolidRepresentation(
@@ -231,26 +228,24 @@ public class RoutingExample {
 
             mapView.getMapScene().addMapPolyline(routeMapPolyline);
             mapPolylines.add(routeMapPolyline);
-            Log.d("Prueba","Paso 3");
 
             // Optionally, render traffic on route.
-            //showTrafficOnRoute(route);
+            showTrafficOnRoute(route);
 
             GeoCoordinates startPoint =
                     route.getSections().get(0).getDeparturePlace().mapMatchedCoordinates;
             GeoCoordinates destination =
                     route.getSections().get(route.getSections().size() - 1).getArrivalPlace().mapMatchedCoordinates;
 
-            Log.d("Prueba","Paso 4");
             // Draw a circle to indicate starting point and destination.
-            //addCircleMapMarker(startPoint, R.drawable.circular_background);
-            //addCircleMapMarker(destination, R.drawable.circle);
+            addCircleMapMarker(startPoint, R.drawable.marcador_azul);
+            addCircleMapMarker(destination, R.drawable.marcador_rojo);
 
             // Log maneuver instructions per route section.
-        /*List<Section> sections = route.getSections();
+        List<Section> sections = route.getSections();
         for (Section section : sections) {
             logManeuverInstructions(section);
-        }*/
+        }
         } catch (Exception e) {
             Log.e("Prueba",e.toString());
         }
